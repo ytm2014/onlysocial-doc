@@ -1,0 +1,71 @@
+---
+title: "Partner API overview"
+description: "Sign your own customers up to OnlySocial, sign them in with single sign-on, issue their API keys and connect their channels."
+icon: "handshake"
+---
+
+The **Partner API** is for software platforms that bring their own customers to OnlySocial. From your backend you can create a customer's account and workspace, sign them straight into OnlySocial from your app, issue their workspace API key, and give them a link that connects their messaging channels. Nobody has to fill in a sign-up form or open the dashboard.
+
+```bash
+curl https://app.onlysocial.io/api/partner/users/dealer-4821 \
+  -H "X-API-KEY: pk_xxxxxxxxxxxx"
+```
+
+<Note>
+This is a **separate surface** from the [workspace APIs](/authentication). It has its own key, and that key can act on every customer you have provisioned. A workspace API key (`osk_…`) works inside one workspace; a partner key (`pk_…`) manages your customers. They are not interchangeable.
+</Note>
+
+## Getting access
+
+The Partner API is switched on per partner. Contact OnlySocial to become one. You receive:
+
+| | Looks like | Used for |
+| --- | --- | --- |
+| Partner identifier | `acme` | Naming you in the [single sign-on](/partner/single-sign-on) exchange |
+| Partner API key | `pk_` + 40 characters | Every `/api/partner` request, as `X-API-KEY` |
+| SSO signing secret | 64 characters | Signing the sign-in tokens for your customers |
+
+You can also ask for your customers' e-mail addresses to be restricted to your own domains, and for your app's address to be registered, so sign-ins can send people back to it.
+
+## Base URLs
+
+```
+https://app.onlysocial.io/api/partner   Partner API (provisioning, API keys, Channel Connect)
+https://app.onlysocial.io/api/sso       Single sign-on exchange
+```
+
+## What you can do
+
+<Columns cols={2}>
+  <Card title="Provision customers" icon="user-plus" href="/partner/single-sign-on#1-provision-the-customer">
+    Create a customer's account and their own workspace, or refresh one you created before.
+  </Card>
+  <Card title="Single sign-on" icon="right-to-bracket" href="/partner/single-sign-on">
+    Send a customer from your app into OnlySocial already signed in, with no password.
+  </Card>
+  <Card title="Workspace API keys" icon="key" href="/partner/workspace-api-keys">
+    Issue the `osk_` key your integration uses inside a customer's workspace.
+  </Card>
+  <Card title="Channel Connect" icon="plug" href="/partner/channel-connect">
+    Let a customer connect WhatsApp, Facebook, Instagram, TikTok or Telegram from inside your app.
+  </Card>
+</Columns>
+
+## Conventions
+
+- **Your identifier, our workspace.** You name each customer with your own `external_id` (up to 255 characters). Workspaces are addressed by their `uuid`, which provisioning returns.
+- **You only ever see your own.** You may act only on a workspace that a user **you** provisioned administers. Anything else, including a uuid that does not exist, is a `404`, never a `403`, so the API cannot be used to find out about other partners' customers.
+- **Envelope.** Responses are `{ "success": true, "data": … }`. Failures are `{ "success": false, "message": … }`, plus `errors` on a `422` and a stable `error_code` where one applies.
+- **Rate limits.** `/api/partner`: 60 requests a minute. `/api/sso`: 20 requests a minute per client address.
+- **JSON in, JSON out.** Send `Content-Type: application/json` on writes.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Authentication" icon="lock" href="/partner/authentication">
+    Sending the partner key, and keeping it safe.
+  </Card>
+  <Card title="Endpoints" icon="code" href="/partner/reference/customers/provision-a-customer">
+    Every Partner API request, with a playground.
+  </Card>
+</Columns>

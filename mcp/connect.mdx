@@ -1,0 +1,165 @@
+---
+title: "Connect your app"
+description: "Add OnlySocial to Claude, ChatGPT, Cursor, VS Code, Claude Code or any MCP app."
+---
+
+## Before you start
+
+You need:
+
+1. **An OnlySocial account** in a workspace whose plan includes AI assistant (MCP) access.
+2. **An AI app that supports MCP connectors.** Some apps only offer this on paid plans; each section below says what you need.
+3. **The server URL:**
+
+   ```
+   https://app.onlysocial.io/mcp
+   ```
+
+<Warning>
+Once connected, the assistant can do what you can do in that workspace: read your accounts, posts and inbox, and create, schedule, publish and delete posts. Only connect apps you trust, and read what the assistant plans to do before you approve publishing, deleting or messaging customers.
+</Warning>
+
+## How signing in works
+
+It is the same in every app:
+
+1. You add OnlySocial to the app with the server URL.
+2. The app opens OnlySocial in your browser. Sign in as usual, with your two-factor code if you use one.
+3. OnlySocial asks you to **choose one workspace** for this app. The app only ever sees that workspace. Only workspaces whose plan allows AI assistants are listed.
+4. Check the address it says access will be sent to, then click **Connect**. You are sent back to the app and the connection is ready.
+
+**Cancel** gives the app nothing. The app refreshes its access in the background, so you are not asked to sign in again unless you leave the connection unused for 90 days.
+
+<Tip>
+Want the assistant in a different workspace? Remove the connector in your app, add it again and choose the other workspace. Need several workspaces at once? Use a [personal access token](#use-a-personal-access-token) instead.
+</Tip>
+
+<Tabs>
+  <Tab title="Claude">
+    **You need** a Claude Pro, Max, Team or Enterprise plan. On Team and Enterprise, an organisation Owner may need to add the connector first.
+
+    1. In Claude on the web or Claude Desktop, open **Settings → Connectors**.
+    2. Click **Add custom connector**.
+    3. Name it `OnlySocial` and set the **Remote MCP server URL** to `https://app.onlysocial.io/mcp`.
+    4. Leave the OAuth client ID and secret empty: OnlySocial registers Claude by itself.
+    5. Click **Add**, then **Connect**, and sign in.
+
+    In a chat, open the tools menu below the message box and make sure **OnlySocial** is on. Then ask, for example, *"List my OnlySocial workspaces."* The connector also works in the Claude mobile apps.
+
+    **Team and Enterprise:** an Owner adds the connector under **Organization settings → Connectors**; each member then clicks **Connect** in their own **Settings → Connectors** and signs in with their own OnlySocial account.
+  </Tab>
+  <Tab title="ChatGPT">
+    **You need** a ChatGPT plan with custom connectors in **Developer mode** (such as Plus, Pro, Business, Enterprise or Edu). On Business, Enterprise and Edu a workspace admin may need to switch it on.
+
+    1. Open **Settings → Apps & Connectors**, then **Advanced settings**, and switch on **Developer mode**.
+    2. Back in **Apps & Connectors**, click **Create**.
+    3. Name it `OnlySocial`, set the **MCP Server URL** to `https://app.onlysocial.io/mcp` and **Authentication** to **OAuth**.
+    4. Tick **I trust this application**, click **Create**, and sign in when asked.
+
+    In a chat, click **+**, choose **Developer mode** and select **OnlySocial**. ChatGPT asks you to confirm before running tools that change things.
+
+    OpenAI renames these menus from time to time; if you cannot find an option, search their help centre for "custom connectors".
+  </Tab>
+  <Tab title="Claude Code">
+    ```bash
+    claude mcp add --transport http onlysocial https://app.onlysocial.io/mcp
+    ```
+
+    Start Claude Code, type `/mcp`, choose **onlysocial**, then **Authenticate**, and sign in in the browser window that opens.
+  </Tab>
+  <Tab title="Cursor">
+    Open **Cursor Settings → MCP** and click **Add new MCP server**, which opens `mcp.json`. Add:
+
+    ```json
+    {
+      "mcpServers": {
+        "onlysocial": {
+          "url": "https://app.onlysocial.io/mcp"
+        }
+      }
+    }
+    ```
+
+    Save, click **Needs login** next to **onlysocial**, and sign in.
+  </Tab>
+  <Tab title="VS Code">
+    Run **MCP: Add Server…** from the Command Palette and choose **HTTP**, or create `.vscode/mcp.json`:
+
+    ```json
+    {
+      "servers": {
+        "onlysocial": {
+          "type": "http",
+          "url": "https://app.onlysocial.io/mcp"
+        }
+      }
+    }
+    ```
+
+    Click **Start** above the entry, allow OnlySocial to sign you in, and sign in. The tools then appear in Copilot Chat's **Agent** mode.
+  </Tab>
+  <Tab title="Other apps">
+    Any app that supports **remote MCP servers with OAuth** (also called streamable HTTP with dynamic client registration) works: give it the server URL and leave client ID and secret fields empty.
+
+    If your app can only send a fixed token, use a [personal access token](#use-a-personal-access-token).
+  </Tab>
+</Tabs>
+
+## Use a personal access token
+
+For scripts, servers and apps without OAuth. A token acts as you in **every** workspace you belong to, so keep it secret like a password.
+
+<Steps>
+  <Step title="Create the token">
+    In OnlySocial, open **Access Tokens** from your user menu, click **Create**, give it a name and copy the token. It is shown once.
+  </Step>
+  <Step title="Send it as a Bearer token">
+    Point your app at `https://app.onlysocial.io/mcp` with the header `Authorization: Bearer <token>`.
+  </Step>
+</Steps>
+
+<CodeGroup>
+```bash Claude Code
+claude mcp add --transport http onlysocial https://app.onlysocial.io/mcp \
+  --header "Authorization: Bearer $ONLYSOCIAL_TOKEN"
+```
+
+```json Claude Desktop / Cursor
+{
+  "mcpServers": {
+    "onlysocial": {
+      "type": "http",
+      "url": "https://app.onlysocial.io/mcp",
+      "headers": {
+        "Authorization": "Bearer <token>"
+      }
+    }
+  }
+}
+```
+
+```json stdio-only apps
+{
+  "mcpServers": {
+    "onlysocial": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote", "https://app.onlysocial.io/mcp",
+        "--header", "Authorization: Bearer ${ONLYSOCIAL_TOKEN}"
+      ],
+      "env": { "ONLYSOCIAL_TOKEN": "<token>" }
+    }
+  }
+}
+```
+</CodeGroup>
+
+The token keeps working until you delete it under **Access Tokens**. Deleting it disconnects every app that uses it.
+
+## Check the connection
+
+Ask the assistant to *"list my OnlySocial workspaces"*. If they come back, you are connected. If not, see [Troubleshooting](/mcp/troubleshooting).
+
+## Disconnect
+
+Remove the connector in your AI app (for example **Settings → Connectors** in Claude). For a token connection, also delete the token under **Access Tokens** in OnlySocial.

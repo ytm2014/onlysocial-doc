@@ -1,0 +1,77 @@
+---
+title: "Quickstart"
+description: "Create a key and make your first request."
+---
+
+<Steps>
+  <Step title="Create a workspace API key">
+    In your dashboard go to **Configuration → Integrations → REST API** and create a key. For this guide, give it `salesbot:contacts:read` and `publishing:accounts:read`. Copy the key; it is shown only once.
+  </Step>
+  <Step title="Check the key">
+    ```bash
+    curl https://app.onlysocial.io/api/v1/account \
+      -H "Authorization: Bearer osk_YOUR_SECRET"
+    ```
+
+    ```json
+    {
+      "data": {
+        "id": "c2a4f0d1-58e4-4c1b-a1f7-2b6f3e9d0a11",
+        "name": "Acme Marketing",
+        "created_at": "2026-01-14T10:22:31+00:00"
+      }
+    }
+    ```
+
+    The `id` is your **workspace UUID**. You need it for the Publishing API.
+  </Step>
+</Steps>
+
+## Messaging
+
+List your contacts:
+
+```bash
+curl "https://app.onlysocial.io/api/v1/contacts?per_page=10" \
+  -H "Authorization: Bearer osk_YOUR_SECRET"
+```
+
+Lists return `data`, `links` and `meta`. Use `per_page` (up to 100) and `page` to move through them. See the [Messaging API reference](/messaging/account/get-the-authenticated-workspace) for every endpoint.
+
+## Publishing
+
+Publishing URLs include your workspace UUID:
+
+```bash
+curl https://app.onlysocial.io/os/api/WORKSPACE_UUID/accounts \
+  -H "Authorization: Bearer osk_YOUR_SECRET"
+```
+
+To create and schedule a post, you need the account `id`s from that response. This also needs `publishing:posts:write` and `publishing:posts:publish` on your key:
+
+```bash
+curl -X POST https://app.onlysocial.io/os/api/WORKSPACE_UUID/posts \
+  -H "Authorization: Bearer osk_YOUR_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accounts": [12],
+    "date": "2026-10-20",
+    "time": "09:00",
+    "timezone": "Europe/London",
+    "schedule": true,
+    "versions": [
+      { "account_id": 0, "is_original": true, "content": [ { "body": "Our autumn sale starts today!" } ] }
+    ]
+  }'
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Permissions" icon="key" href="/authentication#permissions">
+    Pick the narrowest set your integration needs.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/webhooks/overview">
+    React to events instead of polling.
+  </Card>
+</CardGroup>

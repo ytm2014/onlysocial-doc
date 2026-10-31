@@ -1,0 +1,217 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "OnlySocial API",
+  "description": "APIs, webhooks, the MCP server and the Partner API for OnlySocial.",
+  "colors": {
+    "primary": "#3B82F6",
+    "light": "#60A5FA",
+    "dark": "#1D4ED8"
+  },
+  "logo": {
+    "light": "/logo/onlysocial.png",
+    "dark": "/logo/onlysocial.png",
+    "href": "https://onlysocial.io"
+  },
+  "favicon": "/favicon.png",
+  "navbar": {
+    "links": [
+      {
+        "label": "Help centre",
+        "href": "https://help.onlysocial.io"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Open OnlySocial",
+      "href": "https://app.onlysocial.io"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "index",
+              "quickstart",
+              "authentication",
+              "errors-and-limits"
+            ]
+          },
+          {
+            "group": "Webhooks",
+            "pages": [
+              "webhooks/overview",
+              "webhooks/verify-signatures",
+              "webhooks/events",
+              "webhooks/manage"
+            ]
+          },
+          {
+            "group": "Messaging",
+            "pages": [
+              "ad-referrals"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "zapier"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Messaging API",
+        "openapi": {
+          "source": "api-reference/messaging.openapi.json",
+          "directory": "messaging"
+        }
+      },
+      {
+        "tab": "Publishing API",
+        "openapi": {
+          "source": "api-reference/publishing.openapi.json",
+          "directory": "publishing"
+        }
+      },
+      {
+        "tab": "Link in Bio API",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "biolinks/overview"
+            ]
+          },
+          {
+            "group": "Reference",
+            "openapi": {
+              "source": "api-reference/biolinks.openapi.json",
+              "directory": "biolinks"
+            }
+          }
+        ]
+      },
+      {
+        "tab": "MCP",
+        "groups": [
+          {
+            "group": "MCP server",
+            "pages": [
+              "mcp/overview",
+              "mcp/connect",
+              "mcp/tools",
+              "mcp/troubleshooting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Partner API",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "partner/overview",
+              "partner/authentication",
+              "partner/single-sign-on",
+              "partner/workspace-api-keys",
+              "partner/channel-connect"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "openapi": {
+              "source": "api-reference/partner.openapi.json",
+              "directory": "partner/reference"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "redirects": [
+    { "source": "/doc-566938", "destination": "/authentication" },
+    { "source": "/doc-2269235", "destination": "/mcp/overview" },
+    { "source": "/doc-2482007", "destination": "/mcp/connect" },
+    { "source": "/doc-2269247", "destination": "/mcp/tools" },
+    { "source": "/doc-2269248", "destination": "/mcp/troubleshooting" },
+    { "source": "/api-8268528", "destination": "/publishing/accounts/list-accounts" },
+    { "source": "/api-8269479", "destination": "/publishing/accounts/get-an-account" },
+    { "source": "/api-8269703", "destination": "/publishing/media/list-media" },
+    { "source": "/api-8269719", "destination": "/publishing/media/get-a-media-item" },
+    { "source": "/api-8269870", "destination": "/publishing/media/upload-a-file" },
+    { "source": "/api-8271750", "destination": "/publishing/media/delete-media" },
+    { "source": "/api-18901588", "destination": "/publishing/media/update-a-media-item" },
+    { "source": "/api-8272436", "destination": "/publishing/tags/list-tags" },
+    { "source": "/api-8272438", "destination": "/publishing/tags/get-a-tag" },
+    { "source": "/api-8272439", "destination": "/publishing/tags/create-a-tag" },
+    { "source": "/api-8272441", "destination": "/publishing/tags/delete-a-tag" },
+    { "source": "/api-8276083", "destination": "/publishing/tags/update-a-tag" },
+    { "source": "/api-8272453", "destination": "/publishing/posts/list-posts" },
+    { "source": "/api-8272455", "destination": "/publishing/posts/get-a-post" },
+    { "source": "/api-8272458", "destination": "/publishing/posts/create-a-post" },
+    { "source": "/api-8272468", "destination": "/publishing/posts/delete-a-post" },
+    { "source": "/api-8272582", "destination": "/publishing/posts/delete-several-posts" },
+    { "source": "/api-8272590", "destination": "/publishing/posts/schedule-a-post" },
+    { "source": "/api-8272592", "destination": "/publishing/posts/add-a-post-to-the-queue" },
+    { "source": "/api-8276685", "destination": "/publishing/posts/update-a-post" },
+    { "source": "/api-18901943", "destination": "/publishing/posts/approve-a-post" },
+    { "source": "/api-19303563", "destination": "/" },
+    { "source": "/api-19303574", "destination": "/" },
+    { "source": "/api-19303575", "destination": "/" },
+    { "source": "/api-37824129", "destination": "/" },
+    { "source": "/api-37824130", "destination": "/" },
+    { "source": "/api-37824131", "destination": "/" },
+    { "source": "/api-37824132", "destination": "/" },
+    { "source": "/api-37824133", "destination": "/" },
+    { "source": "/api-37824134", "destination": "/" },
+    { "source": "/api-37824135", "destination": "/" },
+    { "source": "/api-37824136", "destination": "/" },
+    { "source": "/api-37824137", "destination": "/" },
+    { "source": "/api-37824138", "destination": "/" },
+    { "source": "/api-37824139", "destination": "/" },
+    { "source": "/api-37824140", "destination": "/" },
+    { "source": "/api-37824141", "destination": "/" },
+    { "source": "/api-37824142", "destination": "/" },
+    { "source": "/api-37824143", "destination": "/" },
+    { "source": "/api-37824144", "destination": "/" },
+    { "source": "/api-37824145", "destination": "/" },
+    { "source": "/api-37824146", "destination": "/" },
+    { "source": "/api-37824147", "destination": "/" },
+    { "source": "/api-37824148", "destination": "/" },
+    { "source": "/api-37824149", "destination": "/" },
+    { "source": "/api-37824150", "destination": "/" },
+    { "source": "/api-37824151", "destination": "/" },
+    { "source": "/api-37824152", "destination": "/" },
+    { "source": "/api-37824153", "destination": "/" },
+    { "source": "/api-37824154", "destination": "/" },
+    { "source": "/api-37824155", "destination": "/" },
+    { "source": "/api-37824156", "destination": "/" }
+  ],
+  "api": {
+    "playground": {
+      "display": "interactive"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "website": "https://onlysocial.io"
+    }
+  }
+}

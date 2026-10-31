@@ -1,0 +1,60 @@
+---
+title: "Workspace API keys"
+description: "Issue the osk_ key your integration uses inside a customer's workspace, without anybody opening the dashboard."
+icon: "key"
+---
+
+Your integration talks to a customer's workspace through the normal workspace APIs ([Messaging](/messaging/account/get-the-authenticated-workspace), [Publishing](/publishing/diagnostics/check-your-key), [Link in Bio](/biolinks/overview) and [webhooks](/webhooks/manage)), with a workspace API key. You can issue that key yourself for any workspace you provisioned.
+
+```bash
+curl -X POST https://app.onlysocial.io/api/partner/workspaces/$WORKSPACE/api-keys \
+  -H "X-API-KEY: $PARTNER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Dealer CRM",
+    "scopes": ["salesbot:contacts:read", "salesbot:contacts:write"],
+    "expires_at": null
+  }'
+```
+
+| Field | | |
+| --- | --- | --- |
+| `name` | required | Up to 80 characters, so the customer can recognise it. |
+| `scopes` | required | At least one [permission](/authentication#permissions). |
+| `expires_at` | optional | A future date and time, or `null` for no expiry. |
+
+```json 201
+{
+  "success": true,
+  "message": "API key created. The token is shown once and cannot be retrieved again.",
+  "data": {
+    "id": "0b8d6f4e-....",
+    "name": "Dealer CRM",
+    "prefix": "osk_3fA9",
+    "scopes": ["salesbot:contacts:read", "salesbot:contacts:write"],
+    "created_at": "2026-10-20T09:15:40+00:00",
+    "expires_at": null,
+    "revoked_at": null,
+    "last_used_at": { "publishing": null, "salesbot": null, "biolinks": null },
+    "plain_text_token": "osk_3fA9…"
+  }
+}
+```
+
+<Warning>
+`plain_text_token` is returned **once**. It is stored as a hash and cannot be shown again. Put it straight into your secret store, and keep the response body out of your logs (it is sent with `Cache-Control: no-store`).
+</Warning>
+
+## Rules
+
+- **Same permissions as the dashboard.** `scopes` takes the same list a workspace admin sees. A permission the workspace cannot have, for a feature its plan does not include, is a `422`, never silently dropped.
+- **25 live keys per workspace**, shared with keys made in the dashboard. Revoke an unused one before creating another.
+- **The key acts as the customer's admin.** It is attributed to the workspace admin you provisioned, and stops working if that person stops being an admin.
+- **Audited.** Every key you issue is written to the customer's audit log, naming your partner account.
+
+## List and revoke
+
+- `GET /api/partner/workspaces/{workspace}/api-keys` lists the workspace's keys: name, prefix, scopes, dates and last use per API. Never the secret.
+- `DELETE /api/partner/workspaces/{workspace}/api-keys/{id}` revokes a key immediately, for every API. Repeating it returns `200`, so retries are safe.
+
+A workspace that is not yours, or does not exist, is a `404`.

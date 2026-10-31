@@ -1,0 +1,20 @@
+---
+title: "Troubleshooting"
+description: "Fix the common problems connecting an AI assistant to OnlySocial."
+---
+
+| What you see | What to do |
+| --- | --- |
+| The app **couldn't connect** or **authentication failed** | Check the URL is exactly `https://app.onlysocial.io/mcp`, with `https://` and no trailing spaces, then try again. |
+| "None of your workspaces can connect an AI assistant" | None of your workspaces has a plan that includes AI assistant (MCP) access. Ask the workspace owner, or change plan. |
+| `401` / "Unauthenticated" with a token | The token is missing, mistyped or deleted. Check the `Authorization: Bearer <token>` header, or create a new token under **Access Tokens**. |
+| Sign-in errors on a connection that used to work | It went unused for 90 days, or was removed. Click **Connect** in your AI app and sign in again. |
+| The assistant can't see a workspace | With a sign-in connection it only sees the workspace you picked: remove the connector and connect again to pick another. With a token, you are not a member of that workspace. |
+| "You do not have permission…" when creating or changing something | Your role in that workspace is **Viewer**. You need **Member** or **Admin**. |
+| Sales inbox tools are missing | The workspace's plan does not include the sales inbox, or your team role cannot open that area. |
+| A message or broadcast was refused | The assistant must pass `confirm: true` after checking with you, and the workspace may have reached its assistant sending cap (60 messages an hour, 200 people a day). The refusal says which. |
+| Nothing happens when you click **Connect** | Allow pop-ups and redirects for your AI app's site, or try another browser. |
+| The app won't add an HTTP server | It only supports local (stdio) servers. Use the `mcp-remote` bridge shown in [Connect your app](/mcp/connect#use-a-personal-access-token). |
+| The assistant can't see your posts or accounts | Make sure the OnlySocial connector is switched on for that chat, then ask it to "list my OnlySocial workspaces". |
+
+Still stuck? Contact OnlySocial support or visit [help.onlysocial.io](https://help.onlysocial.io), with the name of your AI app and the exact error message.

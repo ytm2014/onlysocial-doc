@@ -1,0 +1,37 @@
+---
+title: "Partner authentication"
+description: "Authenticate the Partner API with your partner key (pk_…), sent as the X-API-KEY header from your backend."
+icon: "lock"
+---
+
+Every `/api/partner` request carries your **partner API key** in the `X-API-KEY` header:
+
+```bash
+curl https://app.onlysocial.io/api/partner/users/dealer-4821 \
+  -H "X-API-KEY: pk_xxxxxxxxxxxx"
+```
+
+Only `X-API-KEY` is accepted here; an `Authorization` header is ignored.
+
+| Response | Meaning |
+| --- | --- |
+| `401` "Missing API key" | No `X-API-KEY` header. |
+| `401` "Invalid or inactive API key" | The key is wrong, was replaced, or your partner account is switched off. |
+| `429` | More than 60 requests in a minute. Wait for `Retry-After` seconds. |
+
+The [single sign-on](/partner/single-sign-on) exchange at `/api/sso` does not use this key: it is authenticated by the token you sign with your SSO secret.
+
+## Which credential goes where
+
+| Credential | Sent to | How |
+| --- | --- | --- |
+| Partner API key `pk_…` | `/api/partner/…` | `X-API-KEY` header |
+| SSO signing secret | Never sent | Signs the HS256 token you post to `/api/sso/generate-auth-url` |
+| Workspace API key `osk_…` (one per customer workspace) | The [Messaging](/messaging/account/get-the-authenticated-workspace), [Publishing](/publishing/diagnostics/check-your-key) and [Link in Bio](/biolinks/overview) APIs, and webhook management | `Authorization: Bearer` or `x-api-key` |
+
+## Keep it safe
+
+- **Backend only.** The partner key is not a per-customer credential: it can act on every workspace you have provisioned. Never put it in a browser, a mobile app or a customer's hands.
+- **Same for the SSO secret.** Anyone holding it can sign a token that logs in as any of your customers.
+- **Rotation.** OnlySocial can issue a new partner key or SSO secret at any time; the old one stops working immediately. Ask for a rotation if either may have leaked, and plan for a short switchover.
+- **Don't log secrets.** Responses that contain a new workspace API key are sent with `Cache-Control: no-store`; keep them out of your logs too.

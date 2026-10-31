@@ -1,0 +1,682 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Partner API",
+    "version": "1.0.0",
+    "description": "Provision your customers, sign them in with single sign-on, issue their workspace API keys and connect their messaging channels. Authenticated by your partner key as `X-API-KEY`, from your backend only."
+  },
+  "servers": [
+    { "url": "https://app.onlysocial.io/api", "description": "OnlySocial" }
+  ],
+  "security": [{ "partnerKey": [] }],
+  "tags": [
+    { "name": "Customers", "description": "Create or refresh a customer's account and workspace." },
+    { "name": "Single sign-on", "description": "Swap a token signed with your SSO secret for a one-time sign-in link." },
+    { "name": "Workspace API keys", "description": "Issue, list and revoke the `osk_` keys of a workspace you provisioned." },
+    { "name": "Channel Connect", "description": "Hosted links that connect a customer's own messaging channels." }
+  ],
+  "paths": {
+    "/partner/users": {
+      "post": {
+        "tags": ["Customers"],
+        "summary": "Provision a customer",
+        "description": "Creates the customer's account and a workspace of their own, or refreshes a customer you provisioned before. Safe to repeat. An e-mail that already belongs to someone else is never taken over: it is a `409` with an `error_code`, and nothing is written. See [Single sign-on](/partner/single-sign-on#1-provision-the-customer).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["external_id", "email"],
+                "properties": {
+                  "external_id": { "type": "string", "maxLength": 255, "description": "Your own id for the customer. Use something that never changes.", "example": "dealer-4821" },
+                  "email": { "type": "string", "format": "email", "maxLength": 255, "example": "sales@acmemotors.test" },
+                  "name": { "type": "string", "maxLength": 255, "example": "Acme Motors" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provisioned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "User provisioned successfully." },
+                    "data": { "$ref": "#/components/schemas/ProvisionResult" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Refused" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/partner/users/{external_id}": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "Get a customer",
+        "description": "A customer you provisioned, with their workspaces.",
+        "parameters": [
+          { "name": "external_id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "dealer-4821" }
+        ],
+        "responses": {
+          "200": {
+            "description": "The customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/Customer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/sso/generate-auth-url": {
+      "post": {
+        "tags": ["Single sign-on"],
+        "summary": "Create a sign-in link",
+        "description": "Swaps a token you signed with HS256 and your SSO secret (claims `sub` = the customer's `external_id`, `email`, optional `name`, and a short `exp`) for a sign-in link that works once, within 5 minutes. A `sub` that was never provisioned is provisioned first. No partner key is sent. 20 requests a minute per client address. See [Single sign-on](/partner/single-sign-on).",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["token", "partner"],
+                "properties": {
+                  "token": { "type": "string", "description": "The signed JWT.", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…" },
+                  "partner": { "type": "string", "description": "Your partner identifier.", "example": "acme" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The sign-in link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "authentication_url": { "type": "string", "format": "uri", "description": "Send the customer's browser here. Add `redirect` to choose where they land.", "example": "https://app.onlysocial.io/sso/authenticate?token=…" },
+                        "expires_in": { "type": "integer", "description": "Seconds the link stays valid.", "example": 300 },
+                        "user": {
+                          "type": "object",
+                          "properties": {
+                            "id": { "type": "integer", "example": 184 },
+                            "email": { "type": "string", "example": "sales@acmemotors.test" },
+                            "name": { "type": "string", "example": "Acme Motors" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing parameters, or the token was rejected: expired, wrong signature, missing `email`, an e-mail mismatch or domain restriction, or a provisioning conflict.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "example": { "success": false, "message": "Invalid SSO token signature." }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inactive partner identifier.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "example": { "success": false, "message": "Invalid or inactive SSO partner." }
+              }
+            }
+          },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/partner/workspaces/{workspace}/api-keys": {
+      "parameters": [{ "$ref": "#/components/parameters/Workspace" }],
+      "get": {
+        "tags": ["Workspace API keys"],
+        "summary": "List API keys",
+        "description": "The workspace's keys, including ones an admin made in the dashboard. Never the secret.",
+        "responses": {
+          "200": {
+            "description": "The keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/ApiKey" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "post": {
+        "tags": ["Workspace API keys"],
+        "summary": "Issue an API key",
+        "description": "Creates an `osk_` key for the workspace. `plain_text_token` is returned **once** and cannot be retrieved again. A permission the workspace cannot have is a `422`. At most 25 live keys per workspace, shared with the dashboard.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "scopes"],
+                "properties": {
+                  "name": { "type": "string", "maxLength": 80, "example": "Dealer CRM" },
+                  "scopes": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "[Permissions](/authentication#permissions), as in the dashboard.", "example": ["salesbot:contacts:read", "salesbot:contacts:write"] },
+                  "expires_at": { "type": ["string", "null"], "format": "date-time", "description": "A future time, or `null` for no expiry.", "example": null }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "API key created. The token is shown once and cannot be retrieved again." },
+                    "data": {
+                      "allOf": [
+                        { "$ref": "#/components/schemas/ApiKey" },
+                        { "type": "object", "properties": { "plain_text_token": { "type": "string", "description": "The secret. Shown once.", "example": "osk_…" } } }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+    "/partner/workspaces/{workspace}/api-keys/{api_key}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/Workspace" },
+        { "name": "api_key", "in": "path", "required": true, "description": "The key's `id`.", "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "delete": {
+        "tags": ["Workspace API keys"],
+        "summary": "Revoke an API key",
+        "description": "Revokes the key immediately, for every API. Repeating it returns `200`.",
+        "responses": {
+          "200": {
+            "description": "Revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "API key revoked for all products." },
+                    "data": { "$ref": "#/components/schemas/ApiKey" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/partner/channel-connect/settings": {
+      "get": {
+        "tags": ["Channel Connect"],
+        "summary": "Get Channel Connect settings",
+        "description": "Whether Channel Connect is on for you, which platforms can be connected, and your registered return URLs.",
+        "responses": {
+          "200": {
+            "description": "Settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": { "type": "boolean", "example": true },
+                        "platforms": { "type": "array", "items": { "type": "string", "enum": ["whatsapp", "facebook", "instagram", "tiktok"] }, "example": ["whatsapp", "facebook", "instagram", "tiktok"] },
+                        "return_urls": { "type": "array", "items": { "type": "string", "format": "uri" }, "example": ["https://app.acmedealers.test/integrations/callback"] }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Channel Connect"],
+        "summary": "Set return URLs",
+        "description": "Replaces your return URLs. Up to 20 HTTPS URLs, without credentials, query strings or fragments. Matching is exact, including the path and any trailing slash. Removing a URL also stops unfinished sessions from completing against it.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["return_urls"],
+                "properties": {
+                  "return_urls": { "type": "array", "maxItems": 20, "items": { "type": "string", "format": "uri", "maxLength": 2048 }, "example": ["https://app.acmedealers.test/integrations/callback"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "object", "properties": { "return_urls": { "type": "array", "items": { "type": "string" } } } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+    "/partner/workspaces/{workspace}/channel-connections": {
+      "parameters": [{ "$ref": "#/components/parameters/Workspace" }],
+      "post": {
+        "tags": ["Channel Connect"],
+        "summary": "Create a connection",
+        "description": "Starts a 30-minute session and returns `connect_url`. Open it as a top-level navigation in your customer's browser, never in an iframe or a fetch. See [Channel Connect](/partner/channel-connect).",
+        "parameters": [
+          { "name": "Idempotency-Key", "in": "header", "required": false, "description": "1–200 characters. The same key and request returns the same connection with `200`; a different request on that key is a `409`.", "schema": { "type": "string", "maxLength": 200 } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["platform", "return_url"],
+                "properties": {
+                  "platform": { "type": "string", "enum": ["whatsapp", "facebook", "instagram", "tiktok"], "example": "whatsapp" },
+                  "return_url": { "type": "string", "format": "uri", "description": "One of your registered return URLs, exactly.", "example": "https://app.acmedealers.test/integrations/callback" },
+                  "state": { "type": "string", "maxLength": 500, "description": "Comes back on the return URL and in the completion event. No secrets or personal data.", "example": "dealer-4821" },
+                  "channel_id": { "type": "string", "format": "uuid", "description": "Reconnect this existing channel." },
+                  "coexistence": { "type": "boolean", "description": "WhatsApp only: keep the number on the WhatsApp Business app." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConnectionEnvelope" } } }
+          },
+          "200": {
+            "description": "The same request again on the same `Idempotency-Key`",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConnectionEnvelope" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "description": "A different request on an `Idempotency-Key` already used." },
+          "422": {
+            "description": "Validation failed, or the platform is not available (`error_code`: `provider_not_supported`).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/partner/workspaces/{workspace}/channel-connections/{connection}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/Workspace" },
+        { "$ref": "#/components/parameters/Connection" }
+      ],
+      "get": {
+        "tags": ["Channel Connect"],
+        "summary": "Get a connection",
+        "description": "The authoritative result of a session. Read it when your customer comes back to your return URL.",
+        "responses": {
+          "200": { "description": "The connection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConnectionEnvelope" } } } },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/partner/workspaces/{workspace}/channel-connections/{connection}/cancel": {
+      "parameters": [
+        { "$ref": "#/components/parameters/Workspace" },
+        { "$ref": "#/components/parameters/Connection" }
+      ],
+      "post": {
+        "tags": ["Channel Connect"],
+        "summary": "Cancel a connection",
+        "description": "Cancels an unfinished session. Safe to repeat, and never disconnects a channel that already connected.",
+        "responses": {
+          "200": { "description": "The connection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConnectionEnvelope" } } } },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/partner/workspaces/{workspace}/channels/telegram": {
+      "parameters": [{ "$ref": "#/components/parameters/Workspace" }],
+      "post": {
+        "tags": ["Channel Connect"],
+        "summary": "Connect a Telegram bot",
+        "description": "Connects a bot from its BotFather token. `201` for a new channel, `200` for the same bot again. A `422` on `takeover` means the bot's webhook points elsewhere: resend with `takeover: true` only if your customer confirms.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bot_token"],
+                "properties": {
+                  "bot_token": { "type": "string", "minLength": 20, "maxLength": 120, "example": "123456:ABC…" },
+                  "name": { "type": "string", "maxLength": 120, "example": "Acme Motors" },
+                  "takeover": { "type": "boolean", "description": "Move the bot's webhook here even though it points somewhere else." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Connected", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TelegramEnvelope" } } } },
+          "200": { "description": "Already connected; refreshed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TelegramEnvelope" } } } },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+    "/partner/workspaces/{workspace}/channels": {
+      "parameters": [{ "$ref": "#/components/parameters/Workspace" }],
+      "get": {
+        "tags": ["Channel Connect"],
+        "summary": "List channels",
+        "description": "The workspace's messaging channels. Public fields only, never channel data or tokens.",
+        "parameters": [
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "maximum": 100 } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The channels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Channel" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/partner/workspaces/{workspace}/channels/{channel}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/Workspace" },
+        { "name": "channel", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "get": {
+        "tags": ["Channel Connect"],
+        "summary": "Get a channel",
+        "description": "One messaging channel. Public fields only.",
+        "responses": {
+          "200": {
+            "description": "The channel",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Channel" } } } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "partnerKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-KEY",
+        "description": "Your partner API key, `pk_…`. Backend only."
+      }
+    },
+    "parameters": {
+      "Workspace": {
+        "name": "workspace",
+        "in": "path",
+        "required": true,
+        "description": "A workspace uuid from provisioning. It must be administered by a customer you provisioned.",
+        "schema": { "type": "string", "format": "uuid" }
+      },
+      "Connection": {
+        "name": "connection",
+        "in": "path",
+        "required": true,
+        "description": "The connection `id`.",
+        "schema": { "type": "string", "format": "uuid" }
+      }
+    },
+    "schemas": {
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "integer", "example": 184 },
+          "external_id": { "type": "string", "example": "dealer-4821" },
+          "email": { "type": "string", "example": "sales@acmemotors.test" },
+          "name": { "type": "string", "example": "Acme Motors" },
+          "is_active": { "type": "boolean", "example": true },
+          "last_sso_login": { "type": ["string", "null"], "format": "date-time", "example": "2026-10-21T08:03:11+00:00" },
+          "created_at": { "type": "string", "format": "date-time", "example": "2026-10-20T09:12:04+00:00" },
+          "workspace_id": { "type": ["string", "null"], "format": "uuid", "description": "The customer's first workspace, which provisioning created. `null` if they administer none.", "example": "6b1f0e2c-…" },
+          "workspace_ids": { "type": "array", "items": { "type": "string", "format": "uuid" }, "description": "Every workspace the customer administers, oldest first." }
+        }
+      },
+      "ProvisionResult": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "integer", "example": 184 },
+          "external_id": { "type": "string", "example": "dealer-4821" },
+          "email": { "type": "string", "example": "sales@acmemotors.test" },
+          "name": { "type": "string", "example": "Acme Motors" },
+          "created_at": { "type": "string", "format": "date-time", "example": "2026-10-20T09:12:04+00:00" },
+          "workspace_id": { "type": ["string", "null"], "format": "uuid", "example": "6b1f0e2c-…" },
+          "workspace_ids": { "type": "array", "items": { "type": "string", "format": "uuid" } },
+          "outcome": { "type": "string", "enum": ["created", "updated"], "example": "created" },
+          "workspace_created": { "type": "boolean", "example": true },
+          "warnings": { "type": "array", "items": { "type": "string", "enum": ["existing_account_linked_without_workspace"] }, "example": [] }
+        }
+      },
+      "ApiKey": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Dealer CRM" },
+          "prefix": { "type": "string", "description": "The first characters of the key, to recognise it." },
+          "scopes": { "type": "array", "items": { "type": "string" } },
+          "created_at": { "type": "string", "format": "date-time" },
+          "expires_at": { "type": ["string", "null"], "format": "date-time" },
+          "revoked_at": { "type": ["string", "null"], "format": "date-time" },
+          "last_used_at": {
+            "type": "object",
+            "properties": {
+              "publishing": { "type": ["string", "null"], "format": "date-time" },
+              "salesbot": { "type": ["string", "null"], "format": "date-time" },
+              "biolinks": { "type": ["string", "null"], "format": "date-time" }
+            }
+          }
+        }
+      },
+      "Connection": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "workspace_id": { "type": "string", "format": "uuid" },
+          "platform": { "type": "string", "enum": ["whatsapp", "facebook", "instagram", "tiktok"] },
+          "coexistence": { "type": "boolean" },
+          "status": { "type": "string", "enum": ["pending", "authorizing", "selecting", "connected", "failed", "cancelled", "expired"] },
+          "channel_id": { "type": ["string", "null"], "format": "uuid", "description": "The channel, once `connected`." },
+          "error_code": { "type": ["string", "null"], "description": "Why it `failed`. See [Error codes](/partner/channel-connect#error-codes)." },
+          "state": { "type": ["string", "null"] },
+          "expires_at": { "type": "string", "format": "date-time" },
+          "connect_url": { "type": "string", "format": "uri", "description": "Only on a pending, unexpired session. A one-session capability: hand it straight to the customer's browser and never log it." }
+        }
+      },
+      "ConnectionEnvelope": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": { "$ref": "#/components/schemas/Connection" }
+        }
+      },
+      "Channel": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Acme Motors" },
+          "platform": { "type": "string", "example": "telegram" },
+          "handle": { "type": ["string", "null"], "example": "acmemotors_bot" },
+          "status": { "type": "string", "example": "connected" },
+          "connected": { "type": "boolean", "example": true },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TelegramEnvelope": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": { "$ref": "#/components/schemas/Channel" },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "webhook_registered": { "type": "boolean" },
+              "webhook_taken_over": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string" },
+          "error_code": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "Unauthenticated": {
+        "description": "Missing or invalid partner key.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "success": false, "message": "Invalid or inactive API key." }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found, or not yours. Another partner's workspace and a uuid that does not exist look the same.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Conflict": {
+        "description": "The e-mail belongs to someone else. Nothing was written.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                { "$ref": "#/components/schemas/Error" },
+                { "type": "object", "properties": { "error_code": { "type": "string", "enum": ["email_has_existing_account", "email_belongs_to_another_partner", "email_in_use_by_another_account"] } } }
+              ]
+            },
+            "example": { "success": false, "message": "That email address is already in use.", "error_code": "email_has_existing_account" }
+          }
+        }
+      },
+      "Refused": {
+        "description": "Refused, for example an e-mail outside your allowed domains.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "success": false, "message": "Email domain not allowed for this partner." }
+          }
+        }
+      },
+      "ValidationFailed": {
+        "description": "A field failed validation.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean", "example": false },
+                "message": { "type": "string", "example": "Validation failed." },
+                "errors": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } }
+              }
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limited. Wait for `Retry-After` seconds."
+      }
+    }
+  }
+}
