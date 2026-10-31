@@ -124,6 +124,12 @@
             ]
           },
           {
+            "group": "Billing",
+            "pages": [
+              "partner/external-checkout"
+            ]
+          },
+          {
             "group": "Endpoints",
             "openapi": {
               "source": "api-reference/partner.openapi.json",

@@ -1,0 +1,402 @@
+---
+title: "External checkout"
+description: "Sell your white-label plans on your own checkout, and give buyers their plan automatically when they sign up. A refund or cancellation takes it back."
+icon: "cart-shopping"
+---
+
+External checkout is for **white-label owners** who sell plans through their own checkout, such as a GoHighLevel funnel or a SureCart store, instead of the built-in Stripe billing. Your checkout tells your white-label app that someone paid. When they sign up with the same e-mail address, their workspace is already on the plan they bought. Nobody is asked to pay twice, and a refund takes the access back.
+
+```bash
+curl -X POST https://app.yourbrand.com/api/external-checkout/$OFFER_TOKEN \
+  -H "X-OS-Secret: $OFFER_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"buyer@example.com","name":"Sam Buyer","order_id":"ord_1042"}'
+```
+
+<Note>
+You set this up in **your white-label admin panel**, and every URL is on **your own domain**. In the examples, `app.yourbrand.com` stands for that domain. It has nothing to do with the [Partner API](/partner/overview) or its `pk_` key: these URLs are authenticated with each offer's own secret.
+</Note>
+
+## How it works
+
+1. A customer buys on your checkout.
+2. Your checkout posts the purchase to a webhook URL on your domain. It is stored against the e-mail address they bought with.
+3. They sign up on your sign-up page with that same address. The plan is applied to their new workspace straight away.
+4. They verify their e-mail and sign in. No upgrade screen, no checkout, no second payment.
+
+If the buyer already has an account, the plan is applied the moment the webhook arrives. If you create their account in the admin panel instead, it has no workspace yet, so the purchase waits: click **Apply** on it in [Purchases](#day-to-day) once they have one.
+
+The plan is attached straight to the workspace, the same way as when you add a subscription to a workspace by hand in the admin panel. Plan limits and everything else behave exactly as they do for a normal paying customer. If the workspace was paying through the built-in billing, that subscription is cancelled at once, so nobody is billed twice.
+
+## Set it up
+
+<Steps>
+  <Step title="Create the plan">
+    In your admin panel, open **Plans** and create the plan buyers should land on, for example "Lifetime Access". Set the limits you want them to have.
+
+    Set **Display Status** to hidden. The plan then never shows on the in-app plans page, so nobody can subscribe to it through the built-in checkout.
+  </Step>
+  <Step title="Create the offer">
+    Open **External Checkout** and click **Add offer**. Make one offer per product you sell.
+
+    | Field | What it does |
+    | --- | --- |
+    | Name | Whatever you call the product. Shown only in the panel. |
+    | Sold on | GoHighLevel, Stripe or Something else. A Stripe offer shows its Stripe setup instead of webhook URLs. |
+    | Product id | For Stripe, the Payment Link's ID (`plink_…`), which is required. Otherwise optional when you use this offer's own URL, and required if every product posts to the shared URL. |
+    | Price id | Optional. A second way for the shared URL to recognise this offer. |
+    | Plan to grant | The plan from step 1. |
+    | Access | **The plan above** keeps that plan's limits. **Unrestricted, ignore plan limits** ignores them. |
+    | Expires after | Leave empty for lifetime access. A number of days makes the access time-limited. |
+    | Apply to | The buyer's first workspace, or every workspace the buyer owns. |
+    | Take access back on refund | Usually on. |
+    | Active | A paused offer's URLs answer `404`. |
+
+    Click **Create offer**. The offer then shows its **Purchase** URL, its **Refund** URL and its **Secret**, each with a **Copy** button.
+
+    | | Looks like |
+    | --- | --- |
+    | Offer token, the last part of both URLs | 24 lowercase letters and digits |
+    | Secret | `whsec_` + 48 characters |
+
+    **New**, next to the secret, makes a new one. The old secret stops working at once, so paste the new one into your checkout straight away.
+  </Step>
+  <Step title="Turn it on">
+    Under **Settings** on the same page:
+
+    | Setting | What it does |
+    | --- | --- |
+    | Turn it on | While this is off, the webhook URLs reject everything. A safe way to stage the setup. |
+    | Hide in-app billing | On by default. Customers holding external access never see the billing or upgrade screens, and the pages behind them are blocked too. |
+    | Require a purchase to register | Off by default. Only e-mail addresses with a purchase on file can sign up. Turn it on only if you sell nothing but these offers. Leaving it off is safe: signing up never grants a paid plan on its own. |
+    | On refund or chargeback | **Move the workspace to the free plan**, or **Lock the workspace**. Without an active free plan, the workspace is always locked. |
+    | Stripe signing secret | Only for [selling through Stripe](#selling-through-stripe), or [catching chargebacks](#chargebacks-and-refunds-in-stripe). Leave it empty otherwise. |
+    | Alert address | Optional. We e-mail it when someone pays but cannot be given access automatically: no e-mail address in the purchase, a product no offer knows, or an offer or plan deleted before the buyer signed up. Unmatched refunds and chargebacks are not e-mailed, because nobody is locked out. |
+
+    Click **Save settings**.
+  </Step>
+  <Step title="Connect your checkout">
+    Send a `POST` to the offer's purchase URL when someone pays, and to its refund URL when you refund them. Follow the tab for your checkout.
+  </Step>
+</Steps>
+
+<Tabs>
+  <Tab title="GoHighLevel">
+    In the workflow that runs on your order or payment trigger, add a **Custom Webhook** action:
+
+    - Method: `POST`
+    - URL: the offer's purchase URL
+    - Header: `X-OS-Secret`, holding the offer's secret
+    - Body:
+
+    ```json
+    {
+      "email": "{{contact.email}}",
+      "name": "{{contact.name}}",
+      "order_id": "{{order.id}}"
+    }
+    ```
+
+    The e-mail is the only field we truly need. Send the order id too: it ties a later refund to this exact purchase, and it stops a retried webhook from counting twice.
+
+    Repeat on the **Refund** trigger, pointing at the offer's refund URL with the same header and body.
+
+    GoHighLevel's refund trigger only fires for refunds issued inside GoHighLevel, and it has no trigger for disputes. To catch those too, see [Chargebacks and refunds in Stripe](#chargebacks-and-refunds-in-stripe).
+  </Tab>
+  <Tab title="SureCart via OttoKit">
+    Set the offer's **Sold on** to Something else. Then, in OttoKit:
+
+    1. Create an automation that starts on SureCart's event for a new purchase. Trigger names vary, so pick the one that fires once, when the customer has paid.
+    2. Add an action that sends a webhook (an HTTP `POST` request) to the offer's purchase URL.
+    3. Add the header `X-OS-Secret`, holding the offer's secret.
+    4. Send a JSON body, filling each value from the trigger's data.
+    5. Make a second automation on SureCart's refund or revoked-purchase event, posting the same body to the offer's refund URL.
+
+    ```json
+    {
+      "email": "<the customer's e-mail>",
+      "name": "<the customer's name>",
+      "order_id": "<the order id>"
+    }
+    ```
+
+    Selling a subscription? Read [Subscriptions](#subscriptions) first: the ids and the events to use are different.
+  </Tab>
+  <Tab title="Other checkouts">
+    Any checkout or automation tool that can send a `POST` request with a custom header works.
+
+    - On a purchase, post to the offer's purchase URL. On a refund, post to its refund URL.
+    - Authenticate with the `X-OS-Secret` header, or [sign the body](#prove-the-request-is-yours).
+    - Send at least `email`. Add `order_id` so refunds and retries find the right purchase.
+
+    Selling several products? You can post all of them to the shared URL instead, `POST /api/external-checkout`, with each product's id in `product_id`. Put that id in the matching offer's **Product id**.
+
+    If your checkout cannot add a header, connect it through an automation tool that can.
+  </Tab>
+</Tabs>
+
+<Note>
+Stripe cannot add the `X-OS-Secret` header, so it has its own URL. See [Selling through Stripe](#selling-through-stripe).
+</Note>
+
+## The URLs
+
+| URL | What it is for |
+| --- | --- |
+| `POST https://<your domain>/api/external-checkout/{token}` | A purchase of this offer. |
+| `POST https://<your domain>/api/external-checkout/{token}/refund` | A refund or chargeback of this offer. |
+| `POST https://<your domain>/api/external-checkout` | Any product, identified by `product_id` or `price_id` in the body. |
+| `POST https://<your domain>/api/external-checkout/stripe` | Stripe's own events, checked with your Stripe signing secret. |
+
+The URLs accept up to **120 requests a minute** from each sending address.
+
+| Response | When |
+| --- | --- |
+| `200` | Received. The body says what happened (see below). A duplicate also gets `200`, with the purchase stored the first time. |
+| `401` | The secret or signature is missing or wrong. The request is logged and never creates a grant. |
+| `403` | The feature is turned off, or a Stripe event arrived with no Stripe signing secret saved. |
+| `404` | No active offer has that token. |
+| `429` | Over the rate limit. Retry later. |
+
+```json 200
+{
+  "received": true,
+  "status": "pending",
+  "event": "purchase",
+  "purchase_id": 42,
+  "note": null
+}
+```
+
+`status` is one of `pending`, `applied`, `revoked` or `unmatched`, as in [Day to day](#day-to-day). `note` says why, when there is something to say.
+
+## Prove the request is yours
+
+Every request except Stripe's must carry the offer's secret, in **one** of two ways:
+
+- **`X-OS-Secret`**: the secret itself. The simplest, and what most checkouts can do.
+- **`X-OS-Signature`**: a lowercase hex HMAC-SHA256 of the raw request body, keyed with the secret. The secret then never travels with the request.
+
+If you send both, only `X-OS-Secret` is checked.
+
+```bash
+BODY='{"email":"buyer@example.com","order_id":"ord_1042"}'
+SIGNATURE=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$OFFER_SECRET" | sed 's/^.* //')
+
+curl -X POST https://app.yourbrand.com/api/external-checkout/$OFFER_TOKEN \
+  -H "Content-Type: application/json" \
+  -H "X-OS-Signature: $SIGNATURE" \
+  -d "$BODY"
+```
+
+Sign the exact bytes you send. The signature carries no timestamp; a replayed request is caught by its order id instead.
+
+On the shared URL, the secret of any of your active offers is accepted, and the offer is then found by `product_id` or `price_id`.
+
+## What we read from the body
+
+The body is read leniently, so a stock webhook that sends every contact field also works. JSON is best; a form post is read too. For each field we look for any of its usual names, at any depth, ignoring case.
+
+| Field | Names we recognise |
+| --- | --- |
+| E-mail | `email`, `contact_email`, `contactemail`, `customer_email`, `customeremail`, `buyer_email`, `payer_email`, `email_address`, `emailaddress` |
+| Name | `name`, `full_name`, `fullname`, `contact_name`, `customer_name`, `billing_name`, or a first name (`first_name`, `firstname`, `given_name`) with a last name (`last_name`, `lastname`, `family_name`) |
+| Order id | `order_id`, `orderid`, `transaction_id`, `transactionid`, `charge_id`, `chargeid`, `payment_id`, `paymentid`, `invoice_id`, `invoiceid`, `subscription_id` |
+| Product id | `product_id`, `productid`, `ghl_product_id`, `sku`, `item_id`, `itemid` |
+| Price id | `price_id`, `priceid`, `variant_id`, `variantid` |
+| Amount | `amount`, `amount_paid`, `amountpaid`, `total`, `total_amount`, `price`, `value`, `amount_total` |
+| Currency | `currency`, `currency_code`, `currencycode` |
+| Event | `event`, `event_type`, `eventtype`, `type`, `action`, `status` |
+
+- A key at the top of the body beats the same key deeper down, and a name earlier in the list beats a later one.
+- The name is read only from the top of the body, or from beside the e-mail address, so a product's name is never taken for the buyer's.
+- With none of the e-mail names present, the first value anywhere in the body that looks like an e-mail address is used. Send the buyer's address explicitly to be sure.
+- A body with no e-mail address at all is stored as unmatched rather than dropped, so you can see it in the panel.
+
+### What the body says it is
+
+An event field can change what a request means:
+
+| The event value contains | Recorded as |
+| --- | --- |
+| `chargeback` or `dispute` | A chargeback |
+| `refund` or `cancel` | A refund |
+| `purchase`, `order`, `payment`, `sale`, `paid`, `succeeded` or `completed` | A purchase |
+| Anything else, or no event field | Whatever the URL is for |
+
+On the **refund URL**, a request is always a refund, or a chargeback if the body says so. On the **purchase URL** and the **shared URL** the body decides, so a field like `"status": "cancelled"` turns a request into a refund. On the shared URL, that is how you send a refund: add `"event": "refund"`.
+
+<Warning>
+On the purchase URL, a body that says `payment_failed` counts as a purchase, because it contains `payment`. Send failures and cancellations to the refund URL, and build the body yourself rather than forwarding your checkout's whole event.
+</Warning>
+
+## Subscriptions
+
+External checkout grants access per **purchase**. It knows nothing about billing periods. To sell a monthly or yearly plan, let your checkout say when access starts and when it stops:
+
+- **Access on**: send a purchase when a subscription starts, or when it is reactivated. **Not** on every renewal.
+- **Access off**: send a refund when the subscription is cancelled, or when its payment has finally failed.
+
+Why not every renewal? Each new order id is a separate purchase, and each purchase is its own grant. Taking a grant back moves the workspace off the plan only when **no other grant still covers it**. A client who renewed six times would hold six grants, and one cancellation would take back only one of them, so they would keep their access.
+
+<Tip>
+If your start trigger also fires on renewals, send the bare subscription id as `order_id`. Every renewal then repeats an id we have already seen, and is ignored as a duplicate. Reactivations still need their own trigger and a new id, as below.
+</Tip>
+
+### One id per activation
+
+Use one stable id for each activation as `order_id`, and send that same id to the refund URL when it ends. That is how the cancellation finds the right grant.
+
+| When | Send to | `order_id` |
+| --- | --- | --- |
+| The subscription starts | Purchase URL | The subscription id, such as `sub_8f2k` |
+| It is cancelled, or its payment finally fails | Refund URL | The same id, `sub_8f2k` |
+| It is reactivated | Purchase URL | A **new** id, such as `sub_8f2k-2026-11-15`: the subscription id plus the reactivation date |
+| It is cancelled again | Refund URL | The reactivation's id, `sub_8f2k-2026-11-15` |
+
+<Warning>
+**A repeated id does nothing.** A purchase with an order id we have already seen is treated as a retry of the first one and ignored, even after that first one was revoked. So a reactivation that reuses the subscription id gives no access back: give every reactivation a new id. Cancellations work the same way. Two cancellations with the same id count as one, so a second cancellation sent with the bare subscription id would change nothing.
+
+Always send an order id. Without one, two purchases from the same e-mail address, for the same offer and amount, look identical, and the second is ignored.
+</Warning>
+
+<Tip>
+Can't rebuild the activation's id when the cancellation arrives? Send an id that is new for this cancellation, such as the subscription id plus the cancellation date and time, with the client's e-mail address. A cancellation whose id matches no purchase falls back to the e-mail address, and takes back that client's most recent active purchase of this offer. This is reliable as long as each client holds one subscription to the offer.
+</Tip>
+
+### Cancel on the last failure, not the first
+
+Most checkouts retry a failed renewal for several days before they give up. Take access away when the checkout gives up and ends the subscription, not on the first failed payment. Otherwise a client whose card is declined once loses access, and when the retry succeeds nothing gives it back, because a renewal is not a purchase.
+
+The same goes for a client who cancels at the end of a paid period: use the event for when the subscription actually ends, not the one for when they ask to cancel.
+
+### Offer settings for a subscription
+
+- **Expires after**: leave it empty. Your webhooks decide when access ends.
+- **Take access back on refund**: on. A cancellation arrives as a refund; with this off, it is stored as unmatched and changes nothing.
+- **On refund or chargeback**, in Settings: choose **Move the workspace to the free plan**, and keep an active free plan. A **locked** workspace stays locked when the client reactivates (unless the offer is Unrestricted), and you would have to unlock it by hand: edit the workspace in the admin panel and set **Access status** to **Requires subscription**.
+
+### Example: SureCart through OttoKit
+
+<Steps>
+  <Step title="Create the offer">
+    Add an offer with **Sold on** set to Something else, the plan to grant, and the settings above. Copy its purchase URL, refund URL and secret.
+  </Step>
+  <Step title="Access on: a new subscription">
+    In OttoKit, create an automation that starts on SureCart's event for a new subscription or purchase. Trigger names vary between versions, so pick the one that fires once, when the client first pays, and not on each renewal.
+
+    Add an action that sends a webhook (an HTTP `POST` request):
+
+    - URL: the offer's purchase URL
+    - Header: `X-OS-Secret`, holding the offer's secret
+    - JSON body, with each value filled from the trigger's data:
+
+    ```json
+    {
+      "email": "<the client's e-mail>",
+      "name": "<the client's name>",
+      "order_id": "<the subscription id>"
+    }
+    ```
+  </Step>
+  <Step title="Access off: cancelled, or payment finally failed">
+    Create a second automation on SureCart's event for a subscription that is cancelled or ends, or a purchase that is revoked: whichever fires when access should end, after payment retries are over.
+
+    Use the same action, header and body, pointed at the offer's **refund URL**, with `order_id` set to the id this activation started with. If the trigger cannot give you that id, use the subscription id plus the cancellation date and time, as in the tip above.
+  </Step>
+  <Step title="Access back on: reactivated">
+    Create a third automation on SureCart's event for a subscription that is reactivated or restored. Post to the offer's **purchase URL**, with `order_id` set to the subscription id plus the reactivation date, so it is new.
+  </Step>
+  <Step title="Test the cycle">
+    With a test subscription, start, cancel and reactivate it once each. After each step, open **Purchases** in the admin panel: you should see a purchase applied, then revoked, then a new purchase applied.
+  </Step>
+</Steps>
+
+## Selling through Stripe
+
+Stripe cannot send the `X-OS-Secret` header, so a Stripe sale never goes to an offer's purchase URL. Stripe's own webhook reports it, signed with the endpoint's signing secret.
+
+This covers **one-off payments**. Subscription checkouts are ignored here, which also keeps the built-in billing's own checkouts on the same Stripe account from being read as purchases. For recurring plans through Stripe, use the built-in Stripe billing.
+
+1. Create the plan and turn the feature on, as above.
+2. In Stripe, create a Payment Link for a one-time price.
+3. Add an offer with **Sold on** set to Stripe, and put the Payment Link's ID in **Product id**. The ID starts with `plink_` and shows in the address bar when you open the Payment Link in Stripe.
+4. In Stripe, add a webhook endpoint at `https://<your domain>/api/external-checkout/stripe` with these events:
+   - `checkout.session.completed`
+   - `checkout.session.async_payment_succeeded`
+   - `charge.refunded`
+   - `charge.dispute.created`
+   - `charge.dispute.closed`
+5. Paste the endpoint's signing secret into **Stripe signing secret** in Settings, and save.
+
+What happens then:
+
+- **A paid checkout** records the purchase against the e-mail address the buyer entered in Stripe, and grants it like any other purchase.
+- **Bank debits and other delayed methods** complete the checkout before the money arrives. The grant waits for `checkout.session.async_payment_succeeded`, so a payment that fails never grants anything.
+- **A refund or dispute** finds the sale through its payment, with the rules below.
+- **A Payment Link no offer knows** is still recorded, as unmatched, with the link's ID in the note. Add that ID to an offer, then grant the buyer by hand.
+
+Selling through your own Stripe Checkout integration rather than a Payment Link? Set the session's `client_reference_id` to the offer's token, shown on the offer in the panel. On a Payment Link it is ignored, because a buyer can set it in the link's URL.
+
+## Chargebacks and refunds in Stripe
+
+Even if you sell on GoHighLevel or another checkout, Stripe's webhook is the way to catch a chargeback, or a refund someone issued from the Stripe dashboard:
+
+- URL: `https://<your domain>/api/external-checkout/stripe`
+- Events: `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`
+- Paste the signing secret Stripe gives you into **Stripe signing secret** in Settings.
+
+Only a **full** refund takes access back; a partial refund leaves it alone. Only a dispute that is **lost** takes access back; one you win does not.
+
+Stripe dispute events often carry no e-mail address. A dispute on a sale made on another checkout then lands in the purchases list as unmatched, and you revoke it from there. A dispute on a sale made through Stripe Checkout still finds that sale by its payment.
+
+## Day to day
+
+**External Checkout → Purchases** lists everything that arrived and what we did with it. Search by e-mail address or order id, or filter by status.
+
+| Status | Meaning |
+| --- | --- |
+| Pending | Paid, waiting for that e-mail address to sign up. |
+| Applied | Access granted. On a refund or chargeback row, it means the refund took access back. |
+| Revoked | Taken back after a refund, a chargeback, or by you. |
+| Unmatched | Arrived, but we could not act on it. The note says why. |
+
+- **Grant access by hand**, at the top of the page, is for a buyer who signed up with a different e-mail address, or bought somewhere we get no webhook. Pick the offer, enter the address and click **Grant access**. It behaves exactly like a webhook purchase.
+- **Apply** tries a pending or unmatched purchase again, for example once the buyer has a workspace, or after you fixed the offer's plan. A purchase for a product no offer knew cannot be applied: use **Grant access by hand** for it.
+- **Revoke**, on any applied purchase, takes the access back. The workspace moves to your free plan, or is locked, as set in **On refund or chargeback**. If another applied purchase still covers the workspace, it keeps its plan.
+
+Deleting an offer stops its URLs at once. Access already granted stays in place.
+
+## Can someone get a free ride?
+
+No. Finding your sign-up page does nothing for them: signing up puts every new workspace on your ordinary free plan. A paid plan is only ever attached from a purchase record, and a purchase record is only ever created by a request carrying an offer's secret, by a Stripe event signed with your Stripe signing secret, or by an admin acting on purpose.
+
+## Test it end to end
+
+With the feature turned on and an offer created:
+
+```bash
+curl -X POST https://app.yourbrand.com/api/external-checkout/$OFFER_TOKEN \
+  -H "Content-Type: application/json" \
+  -H "X-OS-Secret: $OFFER_SECRET" \
+  -d '{"email":"tester@example.com","name":"Test Buyer","order_id":"test-001"}'
+```
+
+Expect `"status": "pending"`, or `"applied"` if that address already has an account.
+
+1. Open **Purchases**. The row reads pending.
+2. Sign up on your sign-up page with `tester@example.com`. The row changes to applied.
+3. Sign in. You land on the dashboard, on the granted plan, with no upgrade screen. With **Hide in-app billing** on, there is no Billing item in the workspace menu.
+4. Send the same request again. You get the same `purchase_id` back and nothing changes: the order id makes it a duplicate.
+5. Now the refund:
+
+```bash
+curl -X POST https://app.yourbrand.com/api/external-checkout/$OFFER_TOKEN/refund \
+  -H "Content-Type: application/json" \
+  -H "X-OS-Secret: $OFFER_SECRET" \
+  -d '{"email":"tester@example.com","order_id":"test-001"}'
+```
+
+The refund row reads applied, the purchase changes to revoked, and the workspace moves to the free plan, or locks, as set in **On refund or chargeback**.
+
+To test Stripe, switch Stripe to test mode, create the webhook and a Payment Link there, and use the test mode signing secret. Buy through the link with the card `4242 4242 4242 4242`, then refund the payment from the Stripe dashboard. The purchase reads applied or pending, then revoked.
