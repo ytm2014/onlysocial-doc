@@ -9,6 +9,7 @@ OnlySocial has a built-in **MCP (Model Context Protocol) server**. Connect an AI
 - "Draft a LinkedIn and X post announcing our webinar and schedule it for Tuesday at 10am."
 - "Upload this image from a URL and add it to the queue for Instagram."
 - "Find my failed posts and tell me what went wrong."
+- "Which account grew most this month, and when should we post next?"
 - "Which conversations in the inbox are still unread?"
 - "Tag everyone who asked about pricing this week as `pricing-lead`."
 - "Book Sam in for a demo on Thursday afternoon."
@@ -33,7 +34,7 @@ The assistant gets two sets of tools. See the [tools reference](/mcp/tools) for 
 
 <CardGroup cols={2}>
   <Card title="Publishing" icon="calendar">
-    Workspaces, connected social accounts, posts, scheduling and the queue, tags and the media library.
+    Workspaces, connected social accounts, posts, scheduling and the queue, tags, the media library and analytics.
   </Card>
   <Card title="Sales inbox" icon="messages">
     Contacts, conversations, messages, automations, appointments and broadcasts, where your plan includes the sales inbox.
@@ -83,4 +84,4 @@ A workspace you cannot access is reported as "not found", the same as one that d
 
 ## Timezones
 
-Dates are stored in UTC. Most publishing tools take an optional `timezone` (an IANA name such as `Europe/London`) for reading your input and formatting the answer. Without one they use your account's timezone, then UTC, and every answer says which timezone it used.
+Dates are stored in UTC. Most publishing tools take an optional `timezone` (an IANA name such as `Europe/London`) for reading your input and formatting the answer. Without one they use your account's timezone, then UTC, and every answer says which timezone it used. Analytics periods are UTC days; `get-best-posting-times` takes a `timezone` for its days, hours and next slots.

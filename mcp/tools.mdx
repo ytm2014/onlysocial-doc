@@ -50,6 +50,17 @@ You only see the tools your role and plan allow. Sales inbox tools appear only w
 | `upload-media-by-url` | Add a file to the library from a public URL. Large files download in the background. |
 | `get-media-upload-status` | Progress of a background download started by `upload-media-by-url`. |
 
+### Analytics
+
+| Tool | What it does |
+| --- | --- |
+| `get-analytics-summary` | The workspace over a period: total followers, follower growth and posts, each compared with the period before, the best-growing account, a leaderboard and the most and least active accounts. |
+| `get-account-analytics` | One account's analytics of one type, such as overview, engagement, content or insights. Which types an account has depends on its network; content and reviews come in pages. |
+| `get-post-analytics` | How a published post did on each account it went out to: views, likes, comments, shares, engagement rate, trends and the best account. |
+| `get-best-posting-times` | The weekdays and hours your posts of the last 180 days did best, and each account's next best time, ready to pass to `schedule-post`. |
+
+Analytics tools only read, so every role can use them, viewers included. Periods are in UTC days. X accounts have no analytics.
+
 ## Sales inbox
 
 ### Overview and lookups

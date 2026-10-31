@@ -61,6 +61,10 @@ const REPLACE = [
   // covers all the platforms the page documents.
   ['description: "Give a customer a link that connects their own WhatsApp number, with no dashboard login."\n---', 'description: "Give a customer a link that connects their own WhatsApp, Facebook, Instagram or TikTok account, or connect a Telegram bot, with no dashboard login."\nicon: "plug"\n---'],
   ['Only on instances where partner-initiated channel onboarding is switched on, and\nonly for connections a partner started.', 'Only for connections a partner started through\nChannel Connect.'],
+  // OnlySocial keeps analytics on, so the notes for platforms that turn them off go.
+  [' If your platform has turned analytics off, every analytics endpoint answers `404`.', ''],
+  ['"Unknown workspace, account or post, or analytics are turned off."', '"Unknown workspace, account or post."'],
+  ['. Not offered where your platform has turned analytics off |', ' |'],
   ['Your platform domain', 'OnlySocial'],
   ['your platform has', 'OnlySocial has'],
   ['Your platform can', 'OnlySocial can'],

@@ -12,6 +12,7 @@ description: "Fix the common problems connecting an AI assistant to OnlySocial."
 | The assistant can't see a workspace | With a sign-in connection it only sees the workspace you picked: remove the connector and connect again to pick another. With a token, you are not a member of that workspace. |
 | "You do not have permission…" when creating or changing something | Your role in that workspace is **Viewer**. You need **Member** or **Admin**. |
 | Sales inbox tools are missing | The workspace's plan does not include the sales inbox, or your team role cannot open that area. |
+| An account has no analytics, or its figures look incomplete | X accounts have no analytics. A newly connected account's first import takes a while; until it finishes, the answer's `initial_sync` says the figures are incomplete. |
 | A message or broadcast was refused | The assistant must pass `confirm: true` after checking with you, and the workspace may have reached its assistant sending cap (60 messages an hour, 200 people a day). The refusal says which. |
 | Nothing happens when you click **Connect** | Allow pop-ups and redirects for your AI app's site, or try another browser. |
 | The app won't add an HTTP server | It only supports local (stdio) servers. Use the `mcp-remote` bridge shown in [Connect your app](/mcp/connect#use-a-personal-access-token). |
