@@ -57,6 +57,9 @@ const REPLACE = [
   ['That platform is not available on this instance.', 'That platform is not available on OnlySocial.'],
   ['The platform is not set up on this instance for that channel. Contact the operator.', 'The platform is not set up for that channel yet. Contact OnlySocial support.'],
   ["or the bot is the\nplatform's own bot", "or the bot is\nOnlySocial's own bot"],
+  // Every other Partner tab page has an icon; give Channel Connect one, and a description that
+  // covers all the platforms the page documents.
+  ['description: "Give a customer a link that connects their own WhatsApp number, with no dashboard login."\n---', 'description: "Give a customer a link that connects their own WhatsApp, Facebook, Instagram or TikTok account, or connect a Telegram bot, with no dashboard login."\nicon: "plug"\n---'],
   ['Only on instances where partner-initiated channel onboarding is switched on, and\nonly for connections a partner started.', 'Only for connections a partner started through\nChannel Connect.'],
   ['Your platform domain', 'OnlySocial'],
   ['your platform has', 'OnlySocial has'],
