@@ -1,0 +1,58 @@
+---
+title: "First comments and threads"
+description: "Add a first comment, or a thread of replies, to a post you create with the Publishing API."
+icon: "comments"
+---
+
+A post's text is a list of content items: `versions[].content[]`. The first item is the post itself. A second item becomes its **first comment** or the **next post in a thread**, depending on the network. There is no separate `first_comment` field.
+
+## Example
+
+This schedules a post and adds a first comment with the link:
+
+```bash
+curl -X POST https://app.onlysocial.io/os/api/{workspace-uuid}/posts \
+  -H "Authorization: Bearer osk_YOUR_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accounts": [12],
+    "date": "2026-11-22",
+    "time": "09:00",
+    "timezone": "Europe/London",
+    "schedule": true,
+    "versions": [
+      {
+        "account_id": 0,
+        "is_original": true,
+        "content": [
+          { "body": "Our autumn sale starts today!" },
+          { "body": "Shop here: https://example.com/sale" }
+        ]
+      }
+    ]
+  }'
+```
+
+[Update a post](/publishing/posts/update-a-post) takes the same `versions`, so you can add, change or remove the first comment until the post goes out.
+
+## What each network does
+
+| Network | Second item | Third item onwards |
+| --- | --- | --- |
+| Facebook Page, Instagram | Posted as the first comment | Not published |
+| LinkedIn | Posted as the first comment where LinkedIn comments are available; otherwise not published | Not published |
+| YouTube | Posted as the first comment on the video | Not published |
+| X, Bluesky, Mastodon, Threads | Posted as a reply, starting a thread | Each posted as a reply to the one before |
+| Every other network | Not published | Not published |
+
+## Good to know
+
+- **A first comment is text only.** Its `media` and `url` are not used. Thread replies can carry their own `media` and `url`.
+- **It goes out after the post.** The comment is posted once the post is live. A blank second item adds no comment.
+- **A failed comment does not undo the post.** If the network refuses the comment, the post stays published and the error shows on that account in the post.
+- **YouTube needs comment permission.** The channel must be connected with YouTube's permission to manage comments. A channel connected without it publishes the video, then the comment fails with `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`. Reconnect the channel and tick every permission box Google shows.
+- **One account only.** Each version has its own `content`, so to add a comment for one account, add a version with that account's `id` as `account_id` and give only that version a second item.
+
+<Note>
+AI assistants connected to the [MCP server](/mcp/overview) follow the same rule: `create-post` and `update-post` take the first comment as the second content item.
+</Note>
