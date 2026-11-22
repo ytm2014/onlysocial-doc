@@ -6,7 +6,7 @@ description: "Every tool the OnlySocial MCP server offers, grouped by what it wo
 Your assistant discovers these tools by itself when it connects. You never call them by name; this page is for knowing what to ask for, and why a tool might be missing.
 
 <Note>
-You only see the tools your role and plan allow. Sales inbox tools appear only where your plan includes the sales inbox, and each one hides itself if your team role cannot open that area in the dashboard. Almost every tool takes a `workspace` uuid from `list-workspaces`.
+You only see the tools your role and plan allow. Sales inbox tools appear only where your plan includes the sales inbox, and each one hides itself if your team role cannot open that area in the dashboard. With a token or workspace API key created with permissions, you also only see the tools those permissions allow. Almost every tool takes a `workspace` uuid from `list-workspaces`.
 </Note>
 
 ## Publishing
@@ -15,7 +15,7 @@ You only see the tools your role and plan allow. Sales inbox tools appear only w
 
 | Tool | What it does |
 | --- | --- |
-| `list-workspaces` | The workspaces you can use here, most recently updated first. With a sign-in connection, just the one you picked. |
+| `list-workspaces` | The workspaces you can use here, most recently updated first. With a sign-in connection, just the ones you ticked when you connected. |
 | `get-workspace` | One workspace: name, colour, your role and approval rights, and counts of accounts, posts and members. |
 | `list-accounts` | The social accounts connected to a workspace, with the numeric IDs `create-post` needs. |
 | `get-account` | One account: provider, username, authorisation status, profile link and metrics. |

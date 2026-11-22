@@ -22,7 +22,7 @@ MCP is an open standard that Claude, ChatGPT, Cursor, VS Code, Claude Code and m
 https://app.onlysocial.io/mcp
 ```
 
-It uses streamable HTTP. [Connect your app](/mcp/connect) by signing in with your OnlySocial login (OAuth), or by sending a personal access token.
+It uses streamable HTTP. It is the same address for every workspace: [connect your app](/mcp/connect) by signing in with your OnlySocial login (OAuth) and ticking the workspaces it may use, or by sending a personal access token.
 
 <Note>
 The older address `https://app.onlysocial.io/os/mcp` still works with a personal access token. Use `/mcp` for anything new: it is the only address that supports signing in.
@@ -45,18 +45,19 @@ The assistant gets two sets of tools. See the [tools reference](/mcp/tools) for 
 
 | | Sign in (OAuth) | Personal access token |
 | --- | --- | --- |
-| Set up | Paste the server URL, sign in, pick a workspace | Create a token, paste it into your app's config |
-| Workspaces | The **one** workspace you pick when you connect | Every workspace you belong to |
+| Set up | Paste the server URL, sign in, tick your workspaces | Create a token with the **AI assistants** permission, paste it into your app's config |
+| Workspaces | The workspaces you tick when you connect. Connect again to change them | Every workspace you belong to |
+| What it can do | Everything your role allows in those workspaces | What your role allows, narrowed to the token's permissions |
 | Best for | Claude, ChatGPT and other apps with connector screens | Claude Code, scripts, apps without OAuth |
-| Lasts | Refreshes itself. Unused for 90 days, sign in again | Until you revoke it |
+| Lasts | Refreshes itself. Unused for 90 days, sign in again | Until it expires (90 days unless you chose another date) or you revoke it |
 
-Either way, the assistant acts **as you**: it can never do more than your own role allows in that workspace.
+Either way, the assistant acts **as you**: it can never do more than your own role allows in each workspace.
 
 ## How it works
 
 Almost every tool works on one workspace. The assistant is told this when it connects, so you can just ask; behind the scenes it:
 
-1. calls `list-workspaces` to get the workspace `uuid` (with a sign-in connection, that is the one workspace you picked),
+1. calls `list-workspaces` to get the workspace `uuid` (with a sign-in connection, only the workspaces you ticked),
 2. passes that `uuid` as `workspace` to every other tool,
 3. for posting, calls `list-accounts` for the account IDs, then `create-post`.
 
@@ -70,7 +71,7 @@ What the assistant may do follows your role in the workspace:
 | Member | ✅ | ✅ |
 | Admin | ✅ | ✅ |
 
-Sales inbox tools also follow your team role: a tool for an area you cannot open in the dashboard is not offered at all. If a workspace requires post approval, posts the assistant schedules or queues wait for approval like anyone else's.
+Sales inbox tools also follow your team role: a tool for an area you cannot open in the dashboard is not offered at all. With a token or workspace API key created with permissions, the assistant also only gets the tools those permissions allow. If a workspace requires post approval, posts the assistant schedules or queues wait for approval like anyone else's.
 
 A workspace you cannot access is reported as "not found", the same as one that does not exist.
 

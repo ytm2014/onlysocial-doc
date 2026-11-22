@@ -16,7 +16,7 @@ You need:
    ```
 
 <Warning>
-Once connected, the assistant can do what you can do in that workspace: read your accounts, posts and inbox, and create, schedule, publish and delete posts. Only connect apps you trust, and read what the assistant plans to do before you approve publishing, deleting or messaging customers.
+Once connected, the assistant can do what you can do in the workspaces you give it: read your accounts, posts and inbox, and create, schedule, publish and delete posts. Only connect apps you trust, and read what the assistant plans to do before you approve publishing, deleting or messaging customers.
 </Warning>
 
 ## How signing in works
@@ -25,14 +25,16 @@ It is the same in every app:
 
 1. You add OnlySocial to the app with the server URL.
 2. The app opens OnlySocial in your browser. Sign in as usual, with your two-factor code if you use one.
-3. OnlySocial asks you to **choose one workspace** for this app. The app only ever sees that workspace. Only workspaces whose plan allows AI assistants are listed.
+3. OnlySocial asks you to **tick the workspaces** this app may use, or **Select all**. The app only ever sees the workspaces you tick. Only workspaces whose plan allows AI assistants are listed; if there is just one, it is ticked already.
 4. Check the address it says access will be sent to, then click **Connect**. You are sent back to the app and the connection is ready.
 
 **Cancel** gives the app nothing. The app refreshes its access in the background, so you are not asked to sign in again unless you leave the connection unused for 90 days.
 
 <Tip>
-Want the assistant in a different workspace? Remove the connector in your app, add it again and choose the other workspace. Need several workspaces at once? Use a [personal access token](#use-a-personal-access-token) instead.
+Want to add or remove a workspace? Connect again from your app and tick the workspaces you want now. Your new choice replaces the old one, and the server URL stays the same. If the app does not show the OnlySocial sign-in screen, disconnect OnlySocial in the app first, then connect.
 </Tip>
+
+If you later leave one of the workspaces, the connection keeps working in the others. If you leave all of them, sign in again.
 
 <Tabs>
   <Tab title="Claude">
@@ -107,11 +109,11 @@ Want the assistant in a different workspace? Remove the connector in your app, a
 
 ## Use a personal access token
 
-For scripts, servers and apps without OAuth. A token acts as you in **every** workspace you belong to, so keep it secret like a password.
+For scripts, servers and apps without OAuth. A token acts as you in **every** workspace you belong to, so keep it secret like a password. The assistant names the workspace on each call.
 
 <Steps>
   <Step title="Create the token">
-    In OnlySocial, open **Access Tokens** from your user menu, click **Create**, give it a name and copy the token. It is shown once.
+    In OnlySocial, go to **Configuration → Integrations**, open **MCP** and the **Other clients** tab (or open **Access Tokens** in your user menu) and click **Create API key**. Choose **All my workspaces**, give it a name and tick the **AI assistants** permission plus the permissions for what the assistant should do, such as Publishing and Messaging. Copy the token. It is shown once.
   </Step>
   <Step title="Send it as a Bearer token">
     Point your app at `https://app.onlysocial.io/mcp` with the header `Authorization: Bearer <token>`.
@@ -154,7 +156,11 @@ claude mcp add --transport http onlysocial https://app.onlysocial.io/mcp \
 ```
 </CodeGroup>
 
-The token keeps working until you delete it under **Access Tokens**. Deleting it disconnects every app that uses it.
+The token keeps working until it expires or you delete it under **Access Tokens**. Deleting it disconnects every app that uses it.
+
+<Note>
+A token without the **AI assistants** permission is refused with `403`. The assistant only gets the tools the token's other permissions allow; to give it more, create a new token. Tokens created before token permissions existed keep working with every tool.
+</Note>
 
 ## Check the connection
 

@@ -36,21 +36,25 @@ const SHARED = [
 ];
 
 // OnlySocial customers integrated with personal access tokens long before workspace keys existed,
-// so the short "Older credentials" note becomes a table that says where each one comes from.
-const OLDER_CREDENTIALS = `Integrations built before workspace API keys keep working with their own credentials, on their own API, as before. They are never converted or expired automatically.
+// so the short "Older credentials" note becomes a table that says where each one comes from and
+// what a token from before token permissions (22 Nov 2026) can still do.
+const OLDER_CREDENTIALS = `Integrations built before workspace API keys and token permissions keep working with their own credentials, on their own API, as before. They are never converted or expired automatically.
 
 | Credential | Where it comes from | Works with |
 | --- | --- | --- |
-| Personal access token | **Access Tokens** in your user menu | The Publishing API and the [MCP server](/mcp/overview). Send it as \`Authorization: Bearer\` only. |
+| Personal access token created before token permissions | **Access Tokens** in your user menu | The Publishing API and the [MCP server](/mcp/overview), with every tool, in every workspace you belong to. Not the Messaging or Link in Bio API: create a new token with those permissions. |
 | Messaging key (\`sbk_…\`) | The REST API page, before workspace keys were switched on | The Messaging API and Zapier |
 
-To move an integration to a workspace key: create the key, update the integration, check a read and a safe write, then revoke the old credential.`;
+To move an integration to a workspace API key or a personal access token with permissions: create it, update the integration, check a read and a safe write, then revoke the old credential.`;
 
 // Applied in order, to every shared file. Sentences first, then the generic phrases. A sentence
 // rule (40+ characters) that matches nothing is reported: ccwl-docs reworded it and the rule needs
 // updating.
 const REPLACE = [
-  ['Personal publishing tokens and messaging keys starting with `sbk_` keep working on their own API as before. They are never converted or expired automatically. To move an integration to a workspace key: create the key, update the integration, check a read and a safe write, then revoke the old credential.', OLDER_CREDENTIALS],
+  ['Messaging keys starting with `sbk_` keep working on their own API as before. They are never converted or expired automatically. To move an integration to a workspace API key or a personal access token: create it, update the integration, check a read and a safe write, then revoke the old credential.', OLDER_CREDENTIALS],
+  // OnlySocial has the MCP server: link it, and drop the note for platforms that switch it off.
+  ['Connect an AI assistant (MCP) with this key or token. The assistant only gets the tools its other permissions allow. Only offered where your platform has AI assistants switched on', 'Connect an AI assistant to the [MCP server](/mcp/overview) with this key or token. The assistant only gets the tools its other permissions allow'],
+  ['| [Zapier](/zapier) | ✅ | ❌ | ❌ |\n', '| [Zapier](/zapier) | ✅ | ❌ | ❌ |\n| [MCP server](/mcp/overview) | ✅ with `mcp:use` | ✅ with `mcp:use` | ✅ every tool |\n'],
   ['  <Step title="Find your domain">\n    Your API lives on the same domain you sign in to. In the examples below, replace `app.example.com` with it.\n  </Step>\n', ''],
   ['If your platform offers the Zapier app, you can connect it', 'If the Zapier integration is on for your workspace, you can connect it'],
   ['Which platforms are available depends on how the instance is configured', 'Which platforms are available depends on how OnlySocial is configured'],

@@ -10,7 +10,7 @@ These docs cover everything you can automate in OnlySocial. Every example uses `
     Create an API key and make your first request in a few minutes.
   </Card>
   <Card title="Authentication" icon="key" href="/authentication">
-    Workspace API keys, headers and permissions, and the older personal access tokens.
+    Workspace API keys, personal access tokens, headers and permissions.
   </Card>
   <Card title="Messaging API" icon="messages" href="/messaging/account/get-the-authenticated-workspace">
     Contacts, conversations, messages, broadcasts and automations.
@@ -38,14 +38,14 @@ These docs cover everything you can automate in OnlySocial. Every example uses `
 | --- | --- | --- | --- |
 | Covers | Contacts, tags, segments, conversations, messages, broadcasts, automations, media | Social accounts, posts, scheduling, approval, tags, media, analytics | Bio pages and blocks, short links, QR codes, pixels, form submissions, analytics, custom domains |
 | Base URL | `https://app.onlysocial.io/api/v1` | `https://app.onlysocial.io/os/api/{workspace-uuid}` | `https://app.onlysocial.io/api/v1/biolinks` |
-| Workspace | Chosen by the API key | In the URL, and must match the API key | Chosen by the API key |
+| Workspace | Chosen by the workspace API key, or the `X-Workspace` header with a personal access token | In the URL (with a workspace API key it must be the key's workspace) | Chosen by the workspace API key, or the `X-Workspace` header with a personal access token |
 
-One workspace API key can call every API, as long as you give it the permissions for each when you create it.
+One workspace API key can call every API, as long as you give it the permissions for each when you create it. A personal access token can do the same in every workspace you belong to. See [Authentication](/authentication).
 
 <Note>
 Some features depend on your plan. If an endpoint returns `404` even with a valid key, the feature is not included in your workspace's plan.
 </Note>
 
 <Tip>
-Integrated before October 2026? Your personal access token still works on the Publishing API at the same addresses. See [Older credentials](/authentication#older-credentials).
+Integrated before October 2026? Your personal access token still works on the Publishing API and the MCP server at the same addresses. To use the Messaging or Link in Bio API, create a new token with those permissions. See [Older credentials](/authentication#older-credentials).
 </Tip>
