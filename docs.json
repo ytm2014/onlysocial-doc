@@ -146,6 +146,29 @@
             }
           }
         ]
+      },
+      {
+        "tab": "Whitelabel",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": ["whitelabel/overview"]
+          },
+          {
+            "group": "Set up",
+            "pages": [
+              "whitelabel/branding",
+              "whitelabel/payments",
+              "whitelabel/plans",
+              "whitelabel/sign-up-and-email",
+              "whitelabel/x-api"
+            ]
+          },
+          {
+            "group": "Run your platform",
+            "pages": ["whitelabel/customers"]
+          }
+        ]
       }
     ]
   },
