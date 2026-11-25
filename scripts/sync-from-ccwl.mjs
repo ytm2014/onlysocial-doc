@@ -42,7 +42,7 @@ const OLDER_CREDENTIALS = `Integrations built before workspace API keys and toke
 
 | Credential | Where it comes from | Works with |
 | --- | --- | --- |
-| Personal access token created before token permissions | **Access Tokens** in your user menu | The Publishing API and the [MCP server](/mcp/overview), with every tool, in every workspace you belong to. Not the Messaging or Link in Bio API: create a new token with those permissions. |
+| Personal access token created before token permissions | **API** in your user menu (**Profile** > **API**) | The Publishing API and the [MCP server](/mcp/overview), with every tool, in every workspace you belong to. Not the Messaging or Link in Bio API: create a new token with those permissions. |
 | Messaging key (\`sbk_…\`) | The REST API page, before workspace keys were switched on | The Messaging API and Zapier |
 
 To move an integration to a workspace API key or a personal access token with permissions: create it, update the integration, check a read and a safe write, then revoke the old credential.`;
@@ -71,6 +71,9 @@ const REPLACE = [
   ['. Not offered where your platform has turned analytics off |', ' |'],
   ['Your platform domain', 'OnlySocial'],
   ['your platform has', 'OnlySocial has'],
+  // Webhook deliveries name the app in their User-Agent (Transport::userAgent).
+  ["The `User-Agent` starts with your platform's name.", 'The `User-Agent` is `OnlySocial-Webhooks/1.0`.'],
+  ['User-Agent: Example-Webhooks/1.0', 'User-Agent: OnlySocial-Webhooks/1.0'],
   ['Your platform can', 'OnlySocial can'],
   ['The platform records', 'OnlySocial records'],
   ['the platform', 'OnlySocial'],

@@ -4,7 +4,7 @@ description: "Add a first comment, or a thread of replies, to a post you create 
 icon: "comments"
 ---
 
-A post's text is a list of content items: `versions[].content[]`. The first item is the post itself. A second item becomes its **first comment** or the **next post in a thread**, depending on the network. There is no separate `first_comment` field.
+A post's text is a list of content items: `versions[].content[]`. The first item is the post itself. A second item becomes its **first comment** or the **next post in a thread**, depending on the network. The REST API has no separate `first_comment` field.
 
 ## Example
 
@@ -33,26 +33,72 @@ curl -X POST https://app.onlysocial.io/os/api/{workspace-uuid}/posts \
   }'
 ```
 
+On Facebook Pages and LinkedIn the comment can also carry one image or GIF. Give the second item a `media` id from your media library:
+
+```json
+"content": [
+  { "body": "Our autumn sale starts today!", "media": [431] },
+  { "body": "This year's bestseller:", "media": [432] }
+]
+```
+
 [Update a post](/publishing/posts/update-a-post) takes the same `versions`, so you can add, change or remove the first comment until the post goes out.
 
 ## What each network does
 
 | Network | Second item | Third item onwards |
 | --- | --- | --- |
-| Facebook Page, Instagram | Posted as the first comment | Not published |
+| Facebook Page | Posted as the first comment | Not published |
+| Instagram | Posted as the first comment | Not published |
 | LinkedIn | Posted as the first comment where LinkedIn comments are available; otherwise not published | Not published |
 | YouTube | Posted as the first comment on the video | Not published |
-| X, Bluesky, Mastodon, Threads | Posted as a reply, starting a thread | Each posted as a reply to the one before |
+| X, Bluesky, Mastodon, Threads, Pixelfed | Posted as a reply, starting a thread | Each posted as a reply to the one before |
 | Every other network | Not published | Not published |
+
+## What a first comment can contain
+
+| Network | Text | Media |
+| --- | --- | --- |
+| Facebook Page | Required, up to 5,000 characters | Up to 1 image or GIF |
+| LinkedIn | Required, up to 3,000 characters | Up to 1 image or GIF |
+| Instagram | Required, up to 2,200 characters | None |
+| YouTube | Up to 10,000 characters | None: any `media` is ignored |
+
+Thread replies can carry their own `media` and `url`. On Pixelfed every post of the thread needs an image or video.
+
+## Checks when you schedule
+
+When you create a post with `schedule`, `schedule_now` or `queue`, update a scheduled post, or call [Schedule a post](/publishing/posts/schedule-a-post), [Add a post to the queue](/publishing/posts/add-a-post-to-the-queue) or [Approve a post](/publishing/posts/approve-a-post), the post is checked against each network's rules first. A first comment that breaks them gets `422`, and nothing is saved or scheduled:
+
+```json
+{
+  "message": "Instagram → The first comment cannot include photos or videos.",
+  "errors": {
+    "requirements.0.instagram.first_comment_media": [
+      "Instagram → The first comment cannot include photos or videos."
+    ]
+  }
+}
+```
+
+| Error key ends in | Why |
+| --- | --- |
+| `.first_comment` | The second item has no text. This includes a blank second item, and one with only an image. |
+| `.first_comment_media` | Media in an Instagram comment, or more than one image, or a video, in a Facebook Page or LinkedIn comment. |
+| `.text_1` | The comment is longer than the network allows. |
+
+The `0` in the key is the version's `account_id`. Drafts are not checked, so you can save an unfinished post. If a scheduled post is later changed so that it breaks a rule, the account fails with that rule's message when the post is due, and nothing is sent to that network.
 
 ## Good to know
 
-- **A first comment is text only.** Its `media` and `url` are not used. Thread replies can carry their own `media` and `url`.
-- **It goes out after the post.** The comment is posted once the post is live. A blank second item adds no comment.
-- **A failed comment does not undo the post.** If the network refuses the comment, the post stays published and the error shows on that account in the post.
+- **It goes out after the post.** The comment is posted once the post is live.
+- **No comment for one account.** Each version has its own `content`. To skip the comment for one account, or give only one account a comment, add a version with that account's `id` as `account_id` and give it one item or two.
+- **A blank second item is refused on Facebook Pages, Instagram and LinkedIn.** Leave the second item out instead. On YouTube a blank second item adds no comment.
+- **Stories get no comment.** A second item on a Facebook or Instagram Story is not published.
+- **YouTube skips made-for-kids videos.** YouTube does not allow comments there, so a video with the `made_for_kids` option publishes without its comment.
+- **A failed comment does not undo the post.** If the network refuses the comment, the post stays published and the account shows as failed, with the network's error. [Retry a failed account](/publishing/posts/retry-a-failed-account) sends only the comment again.
 - **YouTube needs comment permission.** The channel must be connected with YouTube's permission to manage comments. A channel connected without it publishes the video, then the comment fails with `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`. Reconnect the channel and tick every permission box Google shows.
-- **One account only.** Each version has its own `content`, so to add a comment for one account, add a version with that account's `id` as `account_id` and give only that version a second item.
 
 <Note>
-AI assistants connected to the [MCP server](/mcp/overview) follow the same rule: `create-post` and `update-post` take the first comment as the second content item.
+AI assistants connected to the [MCP server](/mcp/overview) can do the same. `create-post` and `update-post` take a `first_comment` object (`body`, and optional `media` ids), which is added as the second item for every account that publishes first comments; other accounts don't get it. A second item in `versions` works too.
 </Note>
