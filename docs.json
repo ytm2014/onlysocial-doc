@@ -76,7 +76,7 @@
         "groups": [
           {
             "group": "Guides",
-            "pages": ["publishing/first-comments"]
+            "pages": ["publishing/first-comments", "publishing/post-options", "publishing/common-errors"]
           },
           {
             "group": "Reference",

@@ -1,0 +1,36 @@
+---
+title: "Common publishing errors"
+description: "What the error on a failed account means, and how to fix it."
+icon: "triangle-exclamation"
+---
+
+When a network refuses a post, the error is the network's own answer. You find it on that account in [Get a post](/publishing/posts/get-a-post) and in the dashboard's Delivery panel, and the `publishing.post.publishing_failed` [webhook](/webhooks/events) tells you it happened.
+
+Only that account is affected: the post still goes out on the other accounts. Retrying the post sends it again only to the accounts that failed, never twice to one that already published.
+
+## Instagram
+
+| Error contains | Why | Fix |
+| --- | --- | --- |
+| `"code":100,"error_subcode":2207067`, "media_type VIDEO is deprecated, use REELS" (shown in the account's language) | Instagram no longer takes a single video as a feed post. | Set `"options": {"instagram": {"type": "reel"}}` and retry. See [Post types and options](/publishing/post-options). |
+| `reel_supports_one_video` | A Reel was given more than one media item. | Send one video, or use `"type": "post"` for a carousel. |
+| `story_single_media_limit` | A Story was given more than one media item. | Send one image or video per Story. |
+| `no_media_selected` | Instagram needs at least one image or video. | Add media to the post. |
+
+## Facebook Pages
+
+| Error contains | Why | Fix |
+| --- | --- | --- |
+| `reel_supports_one_video` | A Reel was given more than one media item. | Send one video, or use `"type": "post"`. |
+
+## YouTube
+
+| Error contains | Why | Fix |
+| --- | --- | --- |
+| `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT` on the first comment | The channel was connected without YouTube's permission to manage comments. The video itself is published. | Reconnect the channel and tick every permission box Google shows. See [First comments](/publishing/first-comments). |
+
+## Every network
+
+| Error contains | Why | Fix |
+| --- | --- | --- |
+| `401`, "token expired", "session has been invalidated", "has not authorized" | The account's connection expired or was revoked on the network. | Reconnect the account in the dashboard, then retry. |

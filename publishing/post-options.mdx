@@ -1,0 +1,86 @@
+---
+title: "Post types and options"
+description: "Publish a Reel, Story or feed post on Instagram and Facebook, and set each network's own options."
+icon: "sliders"
+---
+
+Each version can carry `options`: settings for one network, keyed by the account's `provider` (from [List accounts](/publishing/accounts/list-accounts)). Options you leave out keep their defaults.
+
+## Instagram and Facebook: Reel, Story or post
+
+| Provider | Key | Values | Default |
+| --- | --- | --- | --- |
+| `instagram` | `type` | `post`, `reel`, `story` | `post` |
+| `facebook_page` | `type` | `post`, `reel`, `story`, `livestream` | `post` |
+
+What each type takes:
+
+| Type | Media |
+| --- | --- |
+| `post` | Images, or a mix of images and videos. Two or more items make a carousel. |
+| `reel` | Exactly one video. |
+| `story` | Exactly one image or video. The text is not shown. |
+| `livestream` (Facebook Pages) | One pre-recorded video, broadcast as a live video on the Page. |
+
+<Warning>
+  **Instagram: send a single video as a Reel.** Instagram no longer accepts one video as a feed post and refuses it with `"error_subcode":2207067` ("media_type VIDEO is deprecated, use REELS"). Set `"type": "reel"`. Instagram shows Reels in the feed as well.
+</Warning>
+
+## Example
+
+This publishes one video as a Reel on an Instagram account and a Facebook Page:
+
+```bash
+curl -X POST https://app.onlysocial.io/os/api/{workspace-uuid}/posts \
+  -H "Authorization: Bearer osk_YOUR_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accounts": [12, 15],
+    "date": "2026-11-26",
+    "time": "09:00",
+    "timezone": "Europe/Berlin",
+    "schedule": true,
+    "versions": [
+      {
+        "account_id": 0,
+        "is_original": true,
+        "content": [
+          { "body": "Chewie loves her ball!", "media": [431] }
+        ],
+        "options": {
+          "instagram": { "type": "reel" },
+          "facebook_page": { "type": "reel" }
+        }
+      }
+    ]
+  }'
+```
+
+`media` takes media `id`s from your media library: upload the video first with [Upload a file](/publishing/media/upload-a-file).
+
+## One account, different options
+
+Options on the original version (`"account_id": 0`) apply to every account of that provider. To give one account something else, add a version with that account's `id` as `account_id` and its own `options`:
+
+```json
+"versions": [
+  {
+    "account_id": 0,
+    "is_original": true,
+    "content": [{ "body": "New menu this week", "media": [431] }],
+    "options": { "instagram": { "type": "reel" } }
+  },
+  {
+    "account_id": 18,
+    "is_original": false,
+    "content": [{ "body": "New menu this week", "media": [431] }],
+    "options": { "instagram": { "type": "story" } }
+  }
+]
+```
+
+[Update a post](/publishing/posts/update-a-post) takes the same `versions`, so you can change a post's type until it goes out.
+
+<Note>
+  If a network refuses a post, see [Common publishing errors](/publishing/common-errors).
+</Note>
