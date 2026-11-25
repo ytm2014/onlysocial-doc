@@ -6,13 +6,13 @@ icon: "triangle-exclamation"
 
 When a network refuses a post, the error is the network's own answer. You find it on that account in [Get a post](/publishing/posts/get-a-post) and in the dashboard's Delivery panel, and the `publishing.post.publishing_failed` [webhook](/webhooks/events) tells you it happened.
 
-Only that account is affected: the post still goes out on the other accounts. Retrying the post sends it again only to the accounts that failed, never twice to one that already published.
+Only that account is affected: the post still goes out on the other accounts. In the dashboard a post that went out on some of its accounts reads **Published (6 of 7)**; through the API its status stays `failed`, so you can find it and retry it. Retrying sends it again only to the accounts that failed, never twice to one that already published.
 
 ## Instagram
 
 | Error contains | Why | Fix |
 | --- | --- | --- |
-| `"code":100,"error_subcode":2207067`, "media_type VIDEO is deprecated, use REELS" (shown in the account's language) | Instagram no longer takes a single video as a feed post. | Set `"options": {"instagram": {"type": "reel"}}` and retry. See [Post types and options](/publishing/post-options). |
+| `"code":100,"error_subcode":2207067`, "media_type VIDEO is deprecated, use REELS" (shown in the account's language) | Instagram no longer takes a single video as a feed video. Posts published since 25 November 2026 are sent as Reels automatically. | Retry the post. See [Post types and options](/publishing/post-options). |
 | `reel_supports_one_video` | A Reel was given more than one media item. | Send one video, or use `"type": "post"` for a carousel. |
 | `story_single_media_limit` | A Story was given more than one media item. | Send one image or video per Story. |
 | `no_media_selected` | Instagram needs at least one image or video. | Add media to the post. |
@@ -21,7 +21,14 @@ Only that account is affected: the post still goes out on the other accounts. Re
 
 | Error contains | Why | Fix |
 | --- | --- | --- |
+| `(#12) singular statuses API is deprecated` on the first comment of a Reel | The Reel was published, but its first comment was sent to the wrong ID. Fixed on 25 November 2026. | Retry the post: only the comment is sent. |
 | `reel_supports_one_video` | A Reel was given more than one media item. | Send one video, or use `"type": "post"`. |
+
+## LinkedIn
+
+| What you see | Why | Fix |
+| --- | --- | --- |
+| The account stays **Publishing** for a while | LinkedIn limited that account's requests for the day (`429`). The post waits and goes out once LinkedIn allows it again, at the latest after midnight UTC. Other LinkedIn accounts are not held back. | Nothing to do. Avoid sending many posts to one LinkedIn account in a short time. |
 
 ## YouTube
 

@@ -17,14 +17,14 @@ What each type takes:
 
 | Type | Media |
 | --- | --- |
-| `post` | Images, or a mix of images and videos. Two or more items make a carousel. |
+| `post` | One image or video, or a carousel of two or more images and videos. |
 | `reel` | Exactly one video. |
 | `story` | Exactly one image or video. The text is not shown. |
 | `livestream` (Facebook Pages) | One pre-recorded video, broadcast as a live video on the Page. |
 
-<Warning>
-  **Instagram: send a single video as a Reel.** Instagram no longer accepts one video as a feed post and refuses it with `"error_subcode":2207067` ("media_type VIDEO is deprecated, use REELS"). Set `"type": "reel"`. Instagram shows Reels in the feed as well.
-</Warning>
+<Note>
+  **Instagram: a post with one video is published as a Reel.** Instagram no longer accepts a single video as a feed video, so OnlySocial sends it as a Reel, which Instagram also shows in the feed. A cover frame chosen in the dashboard is kept. You don't need to set `"type": "reel"` for it, though you can.
+</Note>
 
 ## Example
 
