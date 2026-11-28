@@ -129,8 +129,7 @@
               "partner/authentication",
               "partner/single-sign-on",
               "partner/workspace-api-keys",
-              "partner/channel-connect",
-              "partner/account-connect"
+              "partner/client-connect"
             ]
           },
           {
@@ -174,6 +173,8 @@
     ]
   },
   "redirects": [
+    { "source": "/partner/channel-connect", "destination": "/partner/client-connect" },
+    { "source": "/partner/account-connect", "destination": "/partner/client-connect" },
     { "source": "/doc-566938", "destination": "/authentication" },
     { "source": "/doc-2269235", "destination": "/mcp/overview" },
     { "source": "/doc-2482007", "destination": "/mcp/connect" },
