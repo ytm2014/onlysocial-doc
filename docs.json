@@ -129,7 +129,8 @@
               "partner/authentication",
               "partner/single-sign-on",
               "partner/workspace-api-keys",
-              "partner/channel-connect"
+              "partner/channel-connect",
+              "partner/account-connect"
             ]
           },
           {
